@@ -3,7 +3,9 @@ import {
   login, 
   logout, 
   adminCreateUser, 
-  currentUser 
+  currentUser,
+  resetPassword,
+  updatePassword
 } from './auth.js';
 import { 
   fetchUsers, 
@@ -39,6 +41,12 @@ const locationSelect = document.getElementById('ci-location');
 const init = async () => {
   await loadUsers();
   
+  // Handle password reset hash
+  if (window.location.hash.includes('type=recovery')) {
+    showView('view-reset-password');
+    return;
+  }
+
   const session = await getSession();
   updateAuthUI(session);
 
@@ -54,7 +62,9 @@ const init = async () => {
 
 const loadUsers = async () => {
   usersList = await fetchUsers();
-  const usernames = usersList.map(u => u.username);
+  const usernames = usersList
+    .filter(u => u.username.toLowerCase() !== 'admin')
+    .map(u => u.username);
   populateDropdown('ci-name', usernames);
   // Optional blocker initial select populate will happen when adding a blocker row
 };
@@ -64,7 +74,10 @@ const updateAuthUI = (session) => {
   const dashboardNav = document.getElementById('nav-dashboard');
   const userMenu = document.getElementById('user-menu');
   const usernameDisplay = document.getElementById('current-username-display');
+  
+  const adminTabs = document.getElementById('admin-tabs');
   const adminPanel = document.getElementById('admin-panel');
+  const dashboardFeedPanel = document.getElementById('dashboard-feed-panel');
 
   if (session && currentUser) {
     loginNav.style.display = 'none';
@@ -73,16 +86,24 @@ const updateAuthUI = (session) => {
     usernameDisplay.textContent = currentUser.username;
     
     if (currentUser.role === 'admin') {
-      adminPanel.classList.remove('hidden');
+      if (adminTabs) adminTabs.classList.remove('hidden');
+      if (adminTabs) adminTabs.classList.add('flex');
+      if (adminPanel) adminPanel.classList.remove('hidden');
+      if (dashboardFeedPanel) dashboardFeedPanel.classList.add('hidden');
       renderAdminUserList();
     } else {
-      adminPanel.classList.add('hidden');
+      if (adminTabs) adminTabs.classList.add('hidden');
+      if (adminTabs) adminTabs.classList.remove('flex');
+      if (adminPanel) adminPanel.classList.add('hidden');
+      if (dashboardFeedPanel) dashboardFeedPanel.classList.remove('hidden');
     }
   } else {
     loginNav.style.display = 'block';
     dashboardNav.style.display = 'none';
     userMenu.classList.add('hidden');
-    adminPanel.classList.add('hidden');
+    if (adminTabs) adminTabs.classList.add('hidden');
+    if (adminPanel) adminPanel.classList.add('hidden');
+    if (dashboardFeedPanel) dashboardFeedPanel.classList.remove('hidden');
   }
 };
 
@@ -151,7 +172,10 @@ const setupEventListeners = () => {
     row.className = 'blocker-row flex flex-col md:flex-row gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 relative shadow-sm';
     
     // Select HTML string
-    const usernames = usersList.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+    const usernames = usersList
+      .filter(u => u.username.toLowerCase() !== 'admin')
+      .map(u => `<option value="${u.username}">${u.username}</option>`)
+      .join('');
     
     row.innerHTML = `
       <div class="flex-1">
@@ -240,15 +264,79 @@ const setupEventListeners = () => {
     }
   });
 
+  // Forgot Password Flow
+  document.getElementById('btn-show-forgot')?.addEventListener('click', () => {
+    showView('view-forgot-password');
+  });
+
+  document.getElementById('btn-back-login')?.addEventListener('click', () => {
+    showView('view-login');
+  });
+
+  document.getElementById('form-forgot-password')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const identifier = document.getElementById('forgot-identifier').value;
+    try {
+      await resetPassword(identifier);
+      showToast('Reset link sent to your email.');
+      showView('view-login');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('form-reset-password')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('reset-new-password').value;
+    try {
+      await updatePassword(newPassword);
+      showToast('Password updated successfully!');
+      window.history.replaceState(null, null, ' ');
+      window.location.reload();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Admin Dashboard Tabs
+  document.getElementById('tab-admin-users')?.addEventListener('click', (e) => {
+    document.getElementById('admin-panel').classList.remove('hidden');
+    document.getElementById('dashboard-feed-panel').classList.add('hidden');
+    
+    e.target.classList.replace('bg-white', 'bg-indigo-600');
+    e.target.classList.replace('text-slate-600', 'text-white');
+    
+    const feedTab = document.getElementById('tab-admin-feed');
+    if(feedTab) {
+      feedTab.classList.replace('bg-indigo-600', 'bg-white');
+      feedTab.classList.replace('text-white', 'text-slate-600');
+    }
+  });
+
+  document.getElementById('tab-admin-feed')?.addEventListener('click', (e) => {
+    document.getElementById('admin-panel').classList.add('hidden');
+    document.getElementById('dashboard-feed-panel').classList.remove('hidden');
+    
+    e.target.classList.replace('bg-white', 'bg-indigo-600');
+    e.target.classList.replace('text-slate-600', 'text-white');
+    
+    const userTab = document.getElementById('tab-admin-users');
+    if(userTab) {
+      userTab.classList.replace('bg-indigo-600', 'bg-white');
+      userTab.classList.replace('text-white', 'text-slate-600');
+    }
+  });
+
   // Admin Create User Form
   formCreateUser.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const email = document.getElementById('admin-new-email').value;
     const u = document.getElementById('admin-new-username').value;
     const p = document.getElementById('admin-new-password').value;
     const r = document.getElementById('admin-new-role').value;
 
     try {
-      await adminCreateUser(u, p, r);
+      await adminCreateUser(email, u, p, r);
       showToast('User created! You have been logged out. Please log in again.');
       formCreateUser.reset();
       await loadUsers();
@@ -360,10 +448,63 @@ const renderAdminUserList = () => {
     const li = document.createElement('li');
     li.className = 'flex justify-between items-center bg-slate-50 border border-slate-100 p-2 rounded';
     li.innerHTML = `
-      <span class="text-slate-800 font-medium">${u.username} <span class="text-xs text-slate-500 ml-2 uppercase">${u.role}</span></span>
-      ${u.username !== 'admin' ? `<button class="text-xs text-red-500 hover:text-red-700 delete-user" data-id="${u.id}">Delete (DB Only)</button>` : ''}
+      <div class="flex flex-col">
+        <span class="text-slate-800 font-medium">${u.username} <span class="text-xs text-slate-500 ml-2 uppercase">${u.role}</span></span>
+        <span class="text-xs text-slate-500">${u.email || 'No email'}</span>
+      </div>
+      ${u.username !== 'admin' ? `
+      <div class="flex gap-2">
+        <button class="text-xs text-indigo-500 hover:text-indigo-700 font-medium edit-user-btn" data-id="${u.id}" data-username="${u.username}" data-role="${u.role}">Edit</button>
+        <button class="text-xs text-red-500 hover:text-red-700 font-medium delete-user-btn" data-id="${u.id}">Delete</button>
+      </div>` : ''}
     `;
     list.appendChild(li);
+  });
+
+  // Attach listeners
+  list.querySelectorAll('.delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      if (confirm('Are you sure you want to completely delete this user?')) {
+        try {
+          // Requires the admin_delete_user RPC in schema.sql
+          const { error } = await supabaseClient.rpc('admin_delete_user', { user_id: id });
+          if (error) throw error;
+          showToast('User deleted.');
+          await loadUsers();
+          renderAdminUserList();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      }
+    });
+  });
+
+  list.querySelectorAll('.edit-user-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      const oldU = e.target.dataset.username;
+      const oldR = e.target.dataset.role;
+      
+      const newU = prompt('Enter new username:', oldU);
+      if (!newU) return;
+      const newR = prompt('Enter new role (admin or user):', oldR);
+      if (newR !== 'admin' && newR !== 'user') return alert('Invalid role');
+      
+      try {
+        const { error } = await supabaseClient.rpc('admin_update_user', { 
+          user_id: id, 
+          new_username: newU, 
+          new_role: newR 
+        });
+        if (error) throw error;
+        showToast('User updated.');
+        await loadUsers();
+        renderAdminUserList();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
   });
 };
 

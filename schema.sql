@@ -2,14 +2,15 @@
 create extension if not exists "uuid-ossp";
 
 -- Create profiles table (extends auth.users)
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   username text unique not null,
+  email text,
   role text default 'user' check (role in ('admin', 'user'))
 );
 
 -- Tasks table
-create table public.tasks (
+create table if not exists public.tasks (
   id uuid primary key default uuid_generate_v4(),
   created_at timestamptz default now(),
   name text not null,
@@ -20,7 +21,7 @@ create table public.tasks (
 );
 
 -- Blockers table
-create table public.blockers (
+create table if not exists public.blockers (
   id uuid primary key default uuid_generate_v4(),
   created_at timestamptz default now(),
   name text not null,
@@ -59,8 +60,8 @@ create policy "Blockers can be updated by authenticated users" on public.blocker
 create or replace function public.handle_new_user() 
 returns trigger as $$
 begin
-  insert into public.profiles (id, username, role)
-  values (new.id, new.raw_user_meta_data->>'username', coalesce(new.raw_user_meta_data->>'role', 'user'));
+  insert into public.profiles (id, username, email, role)
+  values (new.id, new.raw_user_meta_data->>'username', new.email, coalesce(new.raw_user_meta_data->>'role', 'user'));
   return new;
 end;
 $$ language plpgsql security definer;
@@ -71,39 +72,33 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- ==========================================
--- INITIAL ADMIN USER SETUP
--- (Run this snippet to create the default admin user)
--- ==========================================
+-- Admin: Delete User RPC (Security Definer to bypass RLS and delete from auth.users)
+create or replace function public.admin_delete_user(user_id uuid)
+returns void as $$
+begin
+  -- Only allow if the calling user is an admin
+  if (select role from public.profiles where id = auth.uid()) != 'admin' then
+    raise exception 'Unauthorized';
+  end if;
+  
+  -- Delete from auth.users (cascade deletes profile)
+  delete from auth.users where id = user_id;
+end;
+$$ language plpgsql security definer;
 
--- 1. Create the user in auth.users
-insert into auth.users (
-  id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_user_meta_data
-)
-values (
-  'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 
-  '00000000-0000-0000-0000-000000000000', 
-  'authenticated', 
-  'authenticated',
-  'admin@dailycheckin.local', 
-  crypt('password123', gen_salt('bf')), 
-  now(), 
-  '{"username":"admin","role":"admin"}'::jsonb
-)
-on conflict (id) do nothing;
+-- Admin: Update User RPC
+create or replace function public.admin_update_user(user_id uuid, new_username text, new_role text)
+returns void as $$
+begin
+  if (select role from public.profiles where id = auth.uid()) != 'admin' then
+    raise exception 'Unauthorized';
+  end if;
+  
+  -- Update profile (Email updates must be done via Supabase API directly by the user)
+  update public.profiles 
+  set username = new_username, role = new_role 
+  where id = user_id;
+end;
+$$ language plpgsql security definer;
 
--- 2. Create the matching identity for email/password sign-in
-insert into auth.identities (
-  id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at
-)
-values (
-  'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', -- can match user id or be a new uuid
-  'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', -- must match auth.users.id
-  'admin@dailycheckin.local',             -- provider_id usually maps to email for email provider
-  jsonb_build_object('sub', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'email', 'admin@dailycheckin.local'),
-  'email',
-  now(),
-  now(),
-  now()
-)
-on conflict do nothing;
+

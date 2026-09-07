@@ -103,11 +103,14 @@
         <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Welcome Back</h2>
         <form id="form-login" class="flex flex-col gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Username or Email</label>
             <input type="text" id="login-username" class="w-full p-3 rounded-lg" required>
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-sm font-medium text-slate-700">Password</label>
+              <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors" data-target="view-forgot-password" id="btn-show-forgot">Forgot Password?</button>
+            </div>
             <input type="password" id="login-password" class="w-full p-3 rounded-lg" required>
           </div>
           <div id="login-error" class="text-red-500 text-sm font-medium hidden"></div>
@@ -118,17 +121,58 @@
       </div>
     </div>
 
+    <!-- VIEW: FORGOT PASSWORD -->
+    <div id="view-forgot-password" class="app-view hidden-view animate-fade-in w-full max-w-md mx-auto pt-10">
+      <div class="glass p-8 rounded-2xl shadow-xl">
+        <h2 class="text-2xl font-bold mb-4 text-center text-slate-800">Reset Password</h2>
+        <p class="text-sm text-slate-600 mb-6 text-center">Enter your username or email and we will send you a reset link.</p>
+        <form id="form-forgot-password" class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Username or Email</label>
+            <input type="text" id="forgot-identifier" class="w-full p-3 rounded-lg" required>
+          </div>
+          <button type="submit" class="mt-2 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow transition-colors">
+            Send Reset Link
+          </button>
+          <button type="button" class="mt-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors text-center" data-target="view-login" id="btn-back-login">Back to Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- VIEW: SET NEW PASSWORD -->
+    <div id="view-reset-password" class="app-view hidden-view animate-fade-in w-full max-w-md mx-auto pt-10">
+      <div class="glass p-8 rounded-2xl shadow-xl">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Set New Password</h2>
+        <form id="form-reset-password" class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+            <input type="password" id="reset-new-password" class="w-full p-3 rounded-lg" required>
+          </div>
+          <button type="submit" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow transition-colors">
+            Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- VIEW: DASHBOARD (Protected) -->
     <div id="view-dashboard" class="app-view hidden-view animate-fade-in w-full">
       
-      <!-- Admin Panel (Hidden if not admin) -->
+      <!-- Admin Dashboard Tabs -->
+      <div id="admin-tabs" class="flex gap-2 mb-6 hidden">
+        <button id="tab-admin-users" class="px-5 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold text-sm shadow transition-colors">User Management</button>
+        <button id="tab-admin-feed" class="px-5 py-2.5 rounded-lg bg-white text-slate-600 hover:text-slate-800 font-semibold text-sm shadow-sm transition-colors">Dashboard Feed</button>
+      </div>
+
+      <!-- Admin Panel: User Management -->
       <div id="admin-panel" class="glass p-6 rounded-2xl mb-8 hidden">
-        <h3 class="text-xl font-bold mb-4 text-indigo-700">Admin Controls: User Management</h3>
+        <h3 class="text-xl font-bold mb-4 text-indigo-700">User Management</h3>
         <p class="text-xs text-amber-700 mb-4 bg-amber-50 p-2 border border-amber-200 rounded">Note: Creating a user via this frontend will log you out of your current admin session. You will need to log back in.</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="md:col-span-1">
             <h4 class="font-semibold mb-3 text-slate-800">Create User</h4>
             <form id="form-create-user" class="flex flex-col gap-3">
+              <input type="email" id="admin-new-email" class="p-2 rounded-lg text-sm" placeholder="Email Address" required>
               <input type="text" id="admin-new-username" class="p-2 rounded-lg text-sm" placeholder="Username" required>
               <input type="password" id="admin-new-password" class="p-2 rounded-lg text-sm" placeholder="Password" required>
               <select id="admin-new-role" class="p-2 rounded-lg text-sm" required>
@@ -149,18 +193,21 @@
         </div>
       </div>
 
-      <!-- Feeds -->
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-        <h2 class="text-2xl font-bold text-slate-800">Team Dashboard</h2>
-        <div class="flex gap-1 bg-slate-200/60 p-1 rounded-lg w-full md:w-auto">
-          <button id="tab-tasks" class="flex-1 md:flex-none px-4 py-2 rounded-md bg-white text-indigo-700 font-medium text-sm shadow transition-colors">Tasks Feed</button>
-          <button id="tab-blockers" class="flex-1 md:flex-none px-4 py-2 rounded-md text-slate-600 hover:text-slate-800 hover:bg-white/50 font-medium text-sm transition-colors">Blockers Feed</button>
+      <!-- Admin Panel: Dashboard Feed (also the default for normal users) -->
+      <div id="dashboard-feed-panel">
+        <!-- Feeds -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h2 class="text-2xl font-bold text-slate-800">Team Dashboard</h2>
+          <div class="flex gap-1 bg-slate-200/60 p-1 rounded-lg w-full md:w-auto">
+            <button id="tab-tasks" class="flex-1 md:flex-none px-4 py-2 rounded-md bg-white text-indigo-700 font-medium text-sm shadow transition-colors">Tasks Feed</button>
+            <button id="tab-blockers" class="flex-1 md:flex-none px-4 py-2 rounded-md text-slate-600 hover:text-slate-800 hover:bg-white/50 font-medium text-sm transition-colors">Blockers Feed</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Feed Container -->
-      <div id="feed-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <!-- Cards populated here -->
+        <!-- Feed Container -->
+        <div id="feed-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Cards populated here -->
+        </div>
       </div>
     </div>
   </main>
