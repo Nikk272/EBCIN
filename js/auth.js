@@ -4,7 +4,10 @@ import { supabaseClient } from './supabase.js';
 export let currentUser = null;
 
 // Helper to convert username to dummy email
-const getEmailFromUsername = (username) => `${username.toLowerCase()}@dailycheckin.local`;
+const getEmailFromUsername = (username) => {
+  if (username.toLowerCase() === 'admin') return 'edubridgecep@gmail.com';
+  return `${username.toLowerCase()}@dailycheckin.local`;
+};
 
 export const getSession = async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
