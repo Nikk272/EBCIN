@@ -17,8 +17,7 @@ export const fetchUsers = async () => {
 export const submitTasks = async (tasks) => {
   const { data, error } = await supabaseClient
     .from('tasks')
-    .insert(tasks)
-    .select();
+    .insert(tasks);
   if (error) throw error;
   return data;
 };
@@ -26,8 +25,7 @@ export const submitTasks = async (tasks) => {
 export const submitBlockers = async (blockers) => {
   const { data, error } = await supabaseClient
     .from('blockers')
-    .insert(blockers)
-    .select();
+    .insert(blockers);
   if (error) throw error;
   return data;
 };
