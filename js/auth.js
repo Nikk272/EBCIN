@@ -12,7 +12,6 @@ export const getEmailFromIdentifier = async (identifier) => {
     .select('email')
     .eq('username', identifier)
     .single();
-    
   if (error || !data || !data.email) {
     throw new Error('User not found or has no email associated.');
   }

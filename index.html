@@ -44,17 +44,18 @@
               <select id="ci-name" class="w-full p-3 rounded-lg" required></select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Location</label>
-              <input list="locations-list" id="ci-location" class="w-full p-3 rounded-lg border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="Select or type location..." required>
-              <datalist id="locations-list">
-                <option value="Office">
-                <option value="Cambridge">
-                <option value="SVCE">
-                <option value="APS">
-                <option value="VVIT">
-                <option value="VKIT">
-                <option value="Impact">
-              </datalist>
+              <select id="ci-location" class="w-full p-3 rounded-lg border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500" required>
+                <option value="" disabled selected>Select a location...</option>
+                <option value="Office">Office</option>
+                <option value="IMPACT College of Engineering and Applied Sciences">IMPACT College of Engineering and Applied Sciences</option>
+                <option value="Cambridge Institute of Technology – North Campus">Cambridge Institute of Technology – North Campus</option>
+                <option value="A P S College Of Engineering">A P S College Of Engineering</option>
+                <option value="Vivekananda Institute of Technology">Vivekananda Institute of Technology</option>
+                <option value="Sri Venkateshwara College Of Engineering">Sri Venkateshwara College Of Engineering</option>
+                <option value="Vijaya Vittala Institute of Technology">Vijaya Vittala Institute of Technology</option>
+                <option value="Other">Other - (Type location below)</option>
+              </select>
+              <input type="text" id="ci-location-other" class="w-full p-3 mt-2 rounded-lg border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500 hidden" placeholder="Enter other location...">
             </div>
           </div>
 
@@ -67,7 +68,7 @@
               Planned Tasks
             </h3>
             <div id="tasks-container" class="flex flex-col gap-3">
-              <input type="text" class="ci-task w-full p-3 rounded-lg" placeholder="What are you working on today?" required>
+              <input type="text" class="ci-task w-full p-3 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-sm" placeholder="What are you working on today?" required>
             </div>
             <button type="button" id="btn-add-task" class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
               <span>+</span> Add next task

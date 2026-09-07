@@ -154,16 +154,26 @@ const setupEventListeners = () => {
     showToast('Logged out successfully');
   });
 
-  // Location logic simplified via HTML5 datalist (no JS needed)
+  const locationOtherInput = document.getElementById('ci-location-other');
+  locationSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'Other') {
+      locationOtherInput.classList.remove('hidden');
+      locationOtherInput.required = true;
+    } else {
+      locationOtherInput.classList.add('hidden');
+      locationOtherInput.required = false;
+    }
+  });
 
   // Add Task Row
   btnAddTask.addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'ci-task w-full p-3 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-sm';
-    input.placeholder = 'Another task...';
-    input.required = true;
-    tasksContainer.appendChild(input);
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 relative';
+    row.innerHTML = `
+      <input type="text" class="ci-task w-full p-3 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-sm pr-10" placeholder="Another task..." required>
+      <button type="button" class="absolute right-3 text-red-400 hover:text-red-600 font-bold text-xl leading-none" onclick="this.parentElement.remove()" title="Remove task">&times;</button>
+    `;
+    tasksContainer.appendChild(row);
   });
 
   // Add Blocker Row
@@ -212,7 +222,12 @@ const setupEventListeners = () => {
     e.preventDefault();
     
     const name = document.getElementById('ci-name').value;
-    const location = locationSelect.value.trim();
+    let location = locationSelect.value;
+    if (location === 'Other') {
+      location = locationOtherInput.value.trim();
+    } else {
+      location = location.trim();
+    }
 
     const taskInputs = document.querySelectorAll('.ci-task');
     const tasks = Array.from(taskInputs).map(input => ({
@@ -235,6 +250,8 @@ const setupEventListeners = () => {
       
       // Reset form
       formCheckin.reset();
+      locationOtherInput.classList.add('hidden');
+      locationOtherInput.required = false;
       tasksContainer.innerHTML = '<input type="text" class="ci-task w-full p-3 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-sm" placeholder="What are you working on today?" required>';
       blockersContainer.innerHTML = '';
     } catch (err) {
@@ -246,8 +263,8 @@ const setupEventListeners = () => {
   // Login Form
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = document.getElementById('login-username').value;
-    const p = document.getElementById('login-password').value;
+    const u = document.getElementById('login-username').value.trim();
+    const p = document.getElementById('login-password').value.trim();
     const errDiv = document.getElementById('login-error');
     
     try {
