@@ -109,8 +109,7 @@ export const fetchAllAttendance = async () => {
 export const fetchUniqueStudents = async () => {
   const { data, error } = await supabaseClient
     .from('unique_students')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('*');
   if (error) console.error('Error fetching unique students:', error);
   return data || [];
 };
@@ -118,8 +117,7 @@ export const fetchUniqueStudents = async () => {
 export const fetchRegisteredStudents = async () => {
   const { data, error } = await supabaseClient
     .from('registered_students')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('*');
   if (error) console.error('Error fetching registered students:', error);
   return data || [];
 };

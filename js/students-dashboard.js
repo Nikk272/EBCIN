@@ -4,7 +4,13 @@ import { getSession } from './auth.js';
 let currentTab = 'attendance';
 let currentData = [];
 let filteredData = [];
-let currentFilterValue = '';
+let currentFilters = {
+  date: '',
+  dropdown: '',
+  stream: '',
+  section: '',
+  room: ''
+};
 
 // DOM Elements
 const tabs = {
@@ -13,7 +19,11 @@ const tabs = {
   registered: document.getElementById('tab-registered')
 };
 const searchInput = document.getElementById('search-input');
+const filterDate = document.getElementById('filter-date');
 const filterDropdown = document.getElementById('filter-dropdown');
+const filterStream = document.getElementById('filter-stream');
+const filterSection = document.getElementById('filter-section');
+const filterRoom = document.getElementById('filter-room');
 const btnExport = document.getElementById('btn-export');
 const tableHead = document.getElementById('table-head');
 const tableBody = document.getElementById('table-body');
@@ -69,10 +79,11 @@ function setupEventListeners() {
     applyFilter(e.target.value);
   });
 
-  filterDropdown.addEventListener('change', (e) => {
-    currentFilterValue = e.target.value;
-    applyFilter(searchInput.value);
-  });
+  filterDate.addEventListener('change', (e) => { currentFilters.date = e.target.value; applyFilter(searchInput.value); });
+  filterDropdown.addEventListener('change', (e) => { currentFilters.dropdown = e.target.value; applyFilter(searchInput.value); });
+  filterStream.addEventListener('change', (e) => { currentFilters.stream = e.target.value; applyFilter(searchInput.value); });
+  filterSection.addEventListener('change', (e) => { currentFilters.section = e.target.value; applyFilter(searchInput.value); });
+  filterRoom.addEventListener('change', (e) => { currentFilters.room = e.target.value; applyFilter(searchInput.value); });
 
   btnExport.addEventListener('click', exportToCSV);
 }
@@ -90,8 +101,12 @@ async function switchTab(tabId) {
   });
 
   searchInput.value = ''; // Reset search
+  currentFilters = { date: '', dropdown: '', stream: '', section: '', room: '' };
+  filterDate.value = '';
   filterDropdown.value = '';
-  currentFilterValue = '';
+  filterStream.value = '';
+  filterSection.value = '';
+  filterRoom.value = '';
   await loadData(tabId);
 }
 
@@ -116,43 +131,73 @@ async function loadData(tabId) {
 }
 
 function updateFilterDropdown() {
-  let options = ['<option value="">All</option>'];
+  filterDropdown.innerHTML = '<option value="">All</option>';
+  filterStream.innerHTML = '<option value="">All Streams</option>';
+  filterSection.innerHTML = '<option value="">All Sections</option>';
+  filterRoom.innerHTML = '<option value="">All Rooms</option>';
+
   if (currentTab === 'attendance') {
     const colleges = [...new Set(currentData.map(d => d.college_name))].filter(Boolean);
-    colleges.forEach(c => options.push(`<option value="${c}">${c}</option>`));
+    const streams = [...new Set(currentData.map(d => d.stream))].filter(Boolean);
+    const sections = [...new Set(currentData.map(d => d.section))].filter(Boolean);
+    const rooms = [...new Set(currentData.map(d => d.room_number))].filter(Boolean);
+
+    colleges.forEach(c => filterDropdown.innerHTML += `<option value="${c}">${c}</option>`);
+    streams.forEach(c => filterStream.innerHTML += `<option value="${c}">${c}</option>`);
+    sections.forEach(c => filterSection.innerHTML += `<option value="${c}">${c}</option>`);
+    rooms.forEach(c => filterRoom.innerHTML += `<option value="${c}">${c}</option>`);
+
+    filterDate.classList.remove('hidden');
     filterDropdown.classList.remove('hidden');
+    filterStream.classList.remove('hidden');
+    filterSection.classList.remove('hidden');
+    filterRoom.classList.remove('hidden');
   } else if (currentTab === 'unique') {
-    options.push('<option value="registered">Registered</option>');
-    options.push('<option value="not_registered">Not Registered</option>');
+    filterDropdown.innerHTML += '<option value="registered">Registered</option><option value="not_registered">Not Registered</option>';
+    
+    filterDate.classList.add('hidden');
     filterDropdown.classList.remove('hidden');
+    filterStream.classList.add('hidden');
+    filterSection.classList.add('hidden');
+    filterRoom.classList.add('hidden');
   } else if (currentTab === 'registered') {
     const centers = [...new Set(currentData.map(d => d.center))].filter(Boolean);
-    centers.forEach(c => options.push(`<option value="${c}">${c}</option>`));
+    centers.forEach(c => filterDropdown.innerHTML += `<option value="${c}">${c}</option>`);
+    
+    filterDate.classList.add('hidden');
     filterDropdown.classList.remove('hidden');
-  } else {
-    filterDropdown.classList.add('hidden');
+    filterStream.classList.add('hidden');
+    filterSection.classList.add('hidden');
+    filterRoom.classList.add('hidden');
   }
-  filterDropdown.innerHTML = options.join('');
 }
 
 function applyFilter(query) {
   query = query.toLowerCase().trim();
   
   filteredData = currentData.filter(item => {
-    // 1. Dropdown Filter
     let matchesDropdown = true;
-    if (currentFilterValue) {
-      if (currentTab === 'attendance') {
-        matchesDropdown = item.college_name === currentFilterValue;
-      } else if (currentTab === 'unique') {
-        if (currentFilterValue === 'registered') matchesDropdown = !!item.enquiry_id;
-        if (currentFilterValue === 'not_registered') matchesDropdown = !item.enquiry_id;
-      } else if (currentTab === 'registered') {
-        matchesDropdown = item.center === currentFilterValue;
+    let matchesDate = true;
+    let matchesStream = true;
+    let matchesSection = true;
+    let matchesRoom = true;
+
+    if (currentTab === 'attendance') {
+      if (currentFilters.dropdown) matchesDropdown = item.college_name === currentFilters.dropdown;
+      if (currentFilters.date) {
+        const itemDate = item.created_at ? item.created_at.split('T')[0] : '';
+        matchesDate = itemDate === currentFilters.date;
       }
+      if (currentFilters.stream) matchesStream = item.stream === currentFilters.stream;
+      if (currentFilters.section) matchesSection = item.section === currentFilters.section;
+      if (currentFilters.room) matchesRoom = item.room_number === currentFilters.room;
+    } else if (currentTab === 'unique') {
+      if (currentFilters.dropdown === 'registered') matchesDropdown = !!item.enquiry_id;
+      if (currentFilters.dropdown === 'not_registered') matchesDropdown = !item.enquiry_id;
+    } else if (currentTab === 'registered') {
+      if (currentFilters.dropdown) matchesDropdown = item.center === currentFilters.dropdown;
     }
-    
-    // 2. Search Filter
+
     let matchesSearch = true;
     if (query) {
       matchesSearch = Object.values(item).some(val => 
@@ -160,7 +205,7 @@ function applyFilter(query) {
       );
     }
     
-    return matchesDropdown && matchesSearch;
+    return matchesDropdown && matchesDate && matchesStream && matchesSection && matchesRoom && matchesSearch;
   });
   
   renderTable();
