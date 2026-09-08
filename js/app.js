@@ -102,12 +102,16 @@ const updateAuthUI = (session) => {
       if (adminTabs) adminTabs.classList.add('flex');
       if (adminPanel) adminPanel.classList.remove('hidden');
       if (dashboardFeedPanel) dashboardFeedPanel.classList.add('hidden');
+      const personFilter = document.getElementById('filter-person');
+      if (personFilter && personFilter.parentElement) personFilter.parentElement.classList.remove('hidden');
       renderAdminUserList();
     } else {
       if (adminTabs) adminTabs.classList.add('hidden');
       if (adminTabs) adminTabs.classList.remove('flex');
       if (adminPanel) adminPanel.classList.add('hidden');
       if (dashboardFeedPanel) dashboardFeedPanel.classList.remove('hidden');
+      const personFilter = document.getElementById('filter-person');
+      if (personFilter && personFilter.parentElement) personFilter.parentElement.classList.add('hidden');
     }
   } else {
     loginNav.style.display = 'block';
@@ -138,6 +142,15 @@ const renderFeed = () => {
 
   let data = currentFeed === 'tasks' ? tasksData : blockersData;
   const type = currentFeed === 'tasks' ? 'task' : 'blocker';
+
+  // RBAC Filtering
+  if (currentUser && currentUser.role !== 'admin') {
+    if (type === 'task') {
+      data = data.filter(item => item.name === currentUser.username);
+    } else {
+      data = data.filter(item => item.name === currentUser.username || item.dependency_person === currentUser.username);
+    }
+  }
 
   // Apply Sub-Tab Filter
   if (currentSubTab === 'Open') {
@@ -446,7 +459,11 @@ const setupEventListeners = () => {
     const taskBtn = document.getElementById('tab-tasks');
     taskBtn.classList.remove('bg-white', 'shadow', 'text-indigo-700');
     taskBtn.classList.add('text-slate-600', 'hover:text-slate-800', 'hover:bg-white/50');
-    document.getElementById('filter-dependency-container').classList.remove('hidden');
+    if (currentUser && currentUser.role === 'admin') {
+      document.getElementById('filter-dependency-container').classList.remove('hidden');
+    } else {
+      document.getElementById('filter-dependency-container').classList.add('hidden');
+    }
     renderFeed();
   });
 
