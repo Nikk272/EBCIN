@@ -90,7 +90,8 @@ export const submitAttendanceAndCheckRegistration = async (attendanceData) => {
     p_college_name: attendanceData.college_name,
     p_usn: attendanceData.usn,
     p_stream: attendanceData.stream,
-    p_section: attendanceData.section
+    p_section: attendanceData.section,
+    p_room_number: attendanceData.room_number || null
   });
   if (error) throw error;
   return data; // Returns boolean (is_registered)

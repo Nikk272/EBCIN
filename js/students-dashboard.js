@@ -1,8 +1,10 @@
 import { fetchAllAttendance, fetchUniqueStudents, fetchRegisteredStudents } from './supabase.js';
+import { getSession } from './auth.js';
 
 let currentTab = 'attendance';
 let currentData = [];
 let filteredData = [];
+let currentFilterValue = '';
 
 // DOM Elements
 const tabs = {
@@ -11,6 +13,8 @@ const tabs = {
   registered: document.getElementById('tab-registered')
 };
 const searchInput = document.getElementById('search-input');
+const filterDropdown = document.getElementById('filter-dropdown');
+const btnExport = document.getElementById('btn-export');
 const tableHead = document.getElementById('table-head');
 const tableBody = document.getElementById('table-body');
 const loadingState = document.getElementById('loading-state');
@@ -26,14 +30,14 @@ const columnsConfig = {
     { key: 'college_name', label: 'College' },
     { key: 'usn', label: 'USN' },
     { key: 'stream', label: 'Stream' },
-    { key: 'section', label: 'Section' }
+    { key: 'section', label: 'Section' },
+    { key: 'room_number', label: 'Room' }
   ],
   unique: [
-    { key: 'created_at', label: 'Date Added', format: val => new Date(val).toLocaleString() },
     { key: 'usn', label: 'USN' },
     { key: 'mobile', label: 'Mobile' },
     { key: 'email', label: 'Email' },
-    { key: 'enquiry_id', label: 'Enquiry ID', format: val => val || '<span class="text-slate-400 italic">Not Registered</span>' }
+    { key: 'enquiry_id', label: 'Enquiry ID', htmlFormat: val => val || '<span class="text-slate-400 italic">Not Registered</span>', csvFormat: val => val || 'Not Registered' }
   ],
   registered: [
     { key: 'name', label: 'Name' },
@@ -46,6 +50,12 @@ const columnsConfig = {
 
 // Initialize
 async function init() {
+  const session = await getSession();
+  if (!session) {
+    window.location.href = 'index.html';
+    return;
+  }
+  
   setupEventListeners();
   await loadData('attendance');
 }
@@ -58,6 +68,13 @@ function setupEventListeners() {
   searchInput.addEventListener('input', (e) => {
     applyFilter(e.target.value);
   });
+
+  filterDropdown.addEventListener('change', (e) => {
+    currentFilterValue = e.target.value;
+    applyFilter(searchInput.value);
+  });
+
+  btnExport.addEventListener('click', exportToCSV);
 }
 
 async function switchTab(tabId) {
@@ -73,6 +90,8 @@ async function switchTab(tabId) {
   });
 
   searchInput.value = ''; // Reset search
+  filterDropdown.value = '';
+  currentFilterValue = '';
   await loadData(tabId);
 }
 
@@ -87,6 +106,7 @@ async function loadData(tabId) {
       currentData = await fetchRegisteredStudents();
     }
     filteredData = [...currentData];
+    updateFilterDropdown();
     renderTable();
   } catch (error) {
     console.error('Error loading data:', error);
@@ -95,18 +115,54 @@ async function loadData(tabId) {
   }
 }
 
+function updateFilterDropdown() {
+  let options = ['<option value="">All</option>'];
+  if (currentTab === 'attendance') {
+    const colleges = [...new Set(currentData.map(d => d.college_name))].filter(Boolean);
+    colleges.forEach(c => options.push(`<option value="${c}">${c}</option>`));
+    filterDropdown.classList.remove('hidden');
+  } else if (currentTab === 'unique') {
+    options.push('<option value="registered">Registered</option>');
+    options.push('<option value="not_registered">Not Registered</option>');
+    filterDropdown.classList.remove('hidden');
+  } else if (currentTab === 'registered') {
+    const centers = [...new Set(currentData.map(d => d.center))].filter(Boolean);
+    centers.forEach(c => options.push(`<option value="${c}">${c}</option>`));
+    filterDropdown.classList.remove('hidden');
+  } else {
+    filterDropdown.classList.add('hidden');
+  }
+  filterDropdown.innerHTML = options.join('');
+}
+
 function applyFilter(query) {
   query = query.toLowerCase().trim();
-  if (!query) {
-    filteredData = [...currentData];
-  } else {
-    filteredData = currentData.filter(item => {
-      // Search across all text values
-      return Object.values(item).some(val => 
+  
+  filteredData = currentData.filter(item => {
+    // 1. Dropdown Filter
+    let matchesDropdown = true;
+    if (currentFilterValue) {
+      if (currentTab === 'attendance') {
+        matchesDropdown = item.college_name === currentFilterValue;
+      } else if (currentTab === 'unique') {
+        if (currentFilterValue === 'registered') matchesDropdown = !!item.enquiry_id;
+        if (currentFilterValue === 'not_registered') matchesDropdown = !item.enquiry_id;
+      } else if (currentTab === 'registered') {
+        matchesDropdown = item.center === currentFilterValue;
+      }
+    }
+    
+    // 2. Search Filter
+    let matchesSearch = true;
+    if (query) {
+      matchesSearch = Object.values(item).some(val => 
         val && String(val).toLowerCase().includes(query)
       );
-    });
-  }
+    }
+    
+    return matchesDropdown && matchesSearch;
+  });
+  
   renderTable();
 }
 
@@ -132,7 +188,9 @@ function renderTable() {
       rowsHtml += '<tr class="hover:bg-slate-50 transition-colors">';
       config.forEach(col => {
         let val = row[col.key];
-        if (col.format) {
+        if (col.htmlFormat) {
+          val = col.htmlFormat(val);
+        } else if (col.format) {
           val = col.format(val);
         } else if (val === null || val === undefined) {
           val = '-';
@@ -154,6 +212,45 @@ function showLoading(isLoading) {
   } else {
     loadingState.classList.add('hidden');
   }
+}
+
+function exportToCSV() {
+  if (filteredData.length === 0) {
+    alert("No data to export");
+    return;
+  }
+  const config = columnsConfig[currentTab];
+  
+  // Create UTF-8 BOM
+  let csvContent = "\uFEFF";
+  
+  // Headers
+  const headers = config.map(col => `"${col.label}"`);
+  csvContent += headers.join(",") + "\r\n";
+  
+  // Rows
+  filteredData.forEach(row => {
+    const rowData = config.map(col => {
+      let val = row[col.key];
+      if (val === null || val === undefined) val = "";
+      if (col.csvFormat) {
+        val = col.csvFormat(val);
+      } else if (col.format) {
+        val = col.format(val);
+      }
+      return `"${String(val).replace(/"/g, '""')}"`;
+    });
+    csvContent += rowData.join(",") + "\r\n";
+  });
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${currentTab}_export.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // Start

@@ -111,7 +111,8 @@ create table if not exists public.student_attendance (
   college_name text not null,
   usn text not null,
   stream text not null,
-  section text not null
+  section text not null,
+  room_number text
 );
 
 -- Enable RLS for student_attendance
@@ -126,7 +127,6 @@ create policy "Attendance is viewable by authenticated users" on public.student_
 -- Unique Students table
 create table if not exists public.unique_students (
   id uuid primary key default uuid_generate_v4(),
-  created_at timestamptz default now(),
   usn text unique,
   mobile text unique,
   email text unique,
@@ -157,7 +157,8 @@ create or replace function public.submit_attendance_and_check_registration(
   p_college_name text,
   p_usn text,
   p_stream text,
-  p_section text
+  p_section text,
+  p_room_number text default null
 ) returns boolean as $$
 declare
   v_unique_student_id uuid;
@@ -165,8 +166,8 @@ declare
   v_is_registered boolean := false;
 begin
   -- 1. Insert attendance
-  insert into public.student_attendance(full_name, email, mobile, college_name, usn, stream, section)
-  values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_stream, p_section);
+  insert into public.student_attendance(full_name, email, mobile, college_name, usn, stream, section, room_number)
+  values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_stream, p_section, p_room_number);
 
   -- 2. Check unique_students
   select id, enquiry_id into v_unique_student_id, v_enquiry_id

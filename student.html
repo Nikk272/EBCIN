@@ -251,6 +251,12 @@
                 </select>
             </div>
 
+            <!-- Room Number -->
+            <div class="form-group">
+                <label for="roomNumber">Room Number <span>(Optional)</span></label>
+                <input type="text" id="roomNumber" name="roomNumber" placeholder="e.g. 101 or Lab 2">
+            </div>
+
             <!-- Submit Button -->
             <button type="submit" class="submit-btn">Submit & Continue</button>
         </form>
@@ -296,7 +302,8 @@
                 college_name: selectedCollegeName,
                 usn: document.getElementById('usn').value,
                 stream: finalStream,
-                section: document.getElementById('section').value
+                section: document.getElementById('section').value,
+                room_number: document.getElementById('roomNumber').value
             };
 
             try {
