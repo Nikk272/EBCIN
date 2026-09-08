@@ -256,11 +256,12 @@
         </form>
     </div>
 
-    <script>
-        // Your Google Apps Script Web App URL
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbxwdnJHB_6jxTR7ZbaNNs0GIk2W0k98Va-0Qcf3foJJBuadjlUa3iWhD9FiEWkKMdwvTA/exec';
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module">
+        import { submitAttendanceAndCheckRegistration } from './js/supabase.js';
 
-        function toggleOtherStream(selectElement) {
+        window.toggleOtherStream = function(selectElement) {
             const otherGroup = document.getElementById('otherStreamGroup');
             const otherInput = document.getElementById('otherStream');
             
@@ -274,7 +275,7 @@
             }
         }
 
-        function handleFormSubmit(event) {
+        window.handleFormSubmit = async function(event) {
             event.preventDefault(); 
 
             const submitBtn = document.querySelector('.submit-btn');
@@ -289,34 +290,30 @@
             const finalStream = (streamSelect === 'Other') ? document.getElementById('otherStream').value : streamSelect;
 
             const formData = {
-                fullName: document.getElementById('fullName').value,
+                full_name: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
                 mobile: document.getElementById('mobile').value,
-                collegeName: selectedCollegeName,
+                college_name: selectedCollegeName,
                 usn: document.getElementById('usn').value,
                 stream: finalStream,
                 section: document.getElementById('section').value
             };
 
-            fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(formData)
-            })
-            .then(() => {
-                if (selectedUrl) {
+            try {
+                const isRegistered = await submitAttendanceAndCheckRegistration(formData);
+                if (isRegistered) {
+                    window.location.href = "https://www.edubridgeindia.com/login";
+                } else if (selectedUrl) {
                     window.location.href = selectedUrl;
                 } else {
                     alert('Attendance recorded successfully!');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error!', error);
                 alert('Something went wrong. Please try again.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit & Continue';
-            });
+            }
         }
     </script>
 

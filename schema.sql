@@ -101,4 +101,106 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Student Attendance table
+create table if not exists public.student_attendance (
+  id uuid primary key default uuid_generate_v4(),
+  created_at timestamptz default now(),
+  full_name text not null,
+  email text not null,
+  mobile text not null,
+  college_name text not null,
+  usn text not null,
+  stream text not null,
+  section text not null
+);
 
+-- Enable RLS for student_attendance
+alter table public.student_attendance enable row level security;
+
+-- Policy: Anyone can insert attendance records
+create policy "Attendance can be created by anyone" on public.student_attendance for insert with check (true);
+
+-- Policy: Only authenticated users (admins) can view attendance
+create policy "Attendance is viewable by authenticated users" on public.student_attendance for select using (auth.role() = 'authenticated');
+
+-- Unique Students table
+create table if not exists public.unique_students (
+  id uuid primary key default uuid_generate_v4(),
+  created_at timestamptz default now(),
+  usn text unique,
+  mobile text unique,
+  email text unique,
+  enquiry_id text
+);
+
+alter table public.unique_students enable row level security;
+create policy "Unique students viewable by authenticated users" on public.unique_students for select using (auth.role() = 'authenticated');
+
+-- Registered Students table
+create table if not exists public.registered_students (
+  id uuid primary key default uuid_generate_v4(),
+  name text,
+  mobile text unique,
+  email text unique,
+  center text,
+  enquiry_id text unique
+);
+
+alter table public.registered_students enable row level security;
+create policy "Registered students viewable by authenticated users" on public.registered_students for select using (auth.role() = 'authenticated');
+
+-- RPC to handle attendance submission and registration logic
+create or replace function public.submit_attendance_and_check_registration(
+  p_full_name text,
+  p_email text,
+  p_mobile text,
+  p_college_name text,
+  p_usn text,
+  p_stream text,
+  p_section text
+) returns boolean as $$
+declare
+  v_unique_student_id uuid;
+  v_enquiry_id text;
+  v_is_registered boolean := false;
+begin
+  -- 1. Insert attendance
+  insert into public.student_attendance(full_name, email, mobile, college_name, usn, stream, section)
+  values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_stream, p_section);
+
+  -- 2. Check unique_students
+  select id, enquiry_id into v_unique_student_id, v_enquiry_id
+  from public.unique_students
+  where usn = p_usn or mobile = p_mobile or email = p_email
+  limit 1;
+
+  if v_unique_student_id is null then
+    -- Insert new
+    insert into public.unique_students(usn, mobile, email)
+    values (p_usn, p_mobile, p_email)
+    returning id into v_unique_student_id;
+  end if;
+
+  -- 3. Check registration status
+  if v_enquiry_id is not null then
+    v_is_registered := true;
+  else
+    -- Check registered_students
+    select enquiry_id into v_enquiry_id
+    from public.registered_students
+    where mobile = p_mobile or email = p_email
+    limit 1;
+
+    if v_enquiry_id is not null then
+      -- Update unique_students
+      update public.unique_students
+      set enquiry_id = v_enquiry_id
+      where id = v_unique_student_id;
+      
+      v_is_registered := true;
+    end if;
+  end if;
+
+  return v_is_registered;
+end;
+$$ language plpgsql security definer;

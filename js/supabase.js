@@ -81,3 +81,44 @@ export const addBlockerComment = async (id, currentComments, newComment) => {
     .eq('id', id);
   if (error) throw error;
 };
+
+export const submitAttendanceAndCheckRegistration = async (attendanceData) => {
+  const { data, error } = await supabaseClient.rpc('submit_attendance_and_check_registration', {
+    p_full_name: attendanceData.full_name,
+    p_email: attendanceData.email,
+    p_mobile: attendanceData.mobile,
+    p_college_name: attendanceData.college_name,
+    p_usn: attendanceData.usn,
+    p_stream: attendanceData.stream,
+    p_section: attendanceData.section
+  });
+  if (error) throw error;
+  return data; // Returns boolean (is_registered)
+};
+
+export const fetchAllAttendance = async () => {
+  const { data, error } = await supabaseClient
+    .from('student_attendance')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) console.error('Error fetching attendance:', error);
+  return data || [];
+};
+
+export const fetchUniqueStudents = async () => {
+  const { data, error } = await supabaseClient
+    .from('unique_students')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) console.error('Error fetching unique students:', error);
+  return data || [];
+};
+
+export const fetchRegisteredStudents = async () => {
+  const { data, error } = await supabaseClient
+    .from('registered_students')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) console.error('Error fetching registered students:', error);
+  return data || [];
+};
