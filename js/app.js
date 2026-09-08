@@ -26,6 +26,17 @@ let currentFeed = 'tasks'; // 'tasks' or 'blockers'
 let tasksData = [];
 let blockersData = [];
 
+// Feed Filters and UI State
+let currentSubTab = 'All'; // 'All' or 'Open'
+let currentViewMode = 'card'; // 'card' or 'list'
+let feedFilters = {
+  dateFrom: '',
+  dateTo: '',
+  person: '',
+  dependency: '',
+  status: ''
+};
+
 // DOM Elements
 const navLinks = document.querySelectorAll('.nav-link');
 const formCheckin = document.getElementById('form-checkin');
@@ -66,7 +77,8 @@ const loadUsers = async () => {
     .filter(u => u.username.toLowerCase() !== 'admin')
     .map(u => u.username);
   populateDropdown('ci-name', usernames);
-  // Optional blocker initial select populate will happen when adding a blocker row
+  populateDropdown('filter-person', usernames, false);
+  populateDropdown('filter-dependency', usernames, false);
 };
 
 const updateAuthUI = (session) => {
@@ -117,16 +129,61 @@ const renderFeed = () => {
   const container = document.getElementById('feed-container');
   container.innerHTML = '';
   
-  const data = currentFeed === 'tasks' ? tasksData : blockersData;
+  // Set View Mode Classes
+  if (currentViewMode === 'card') {
+    container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5';
+  } else {
+    container.className = 'flex flex-col gap-4';
+  }
+
+  let data = currentFeed === 'tasks' ? tasksData : blockersData;
   const type = currentFeed === 'tasks' ? 'task' : 'blocker';
 
+  // Apply Sub-Tab Filter
+  if (currentSubTab === 'Open') {
+    if (type === 'task') {
+      data = data.filter(d => d.status !== 'Completed');
+    } else {
+      data = data.filter(d => d.status !== 'Resolved');
+    }
+  }
+
+  // Apply Detailed Filters
+  data = data.filter(item => {
+    // Person
+    if (feedFilters.person && item.name !== feedFilters.person) return false;
+    // Status
+    if (feedFilters.status && item.status !== feedFilters.status) return false;
+    // Dependency (Only for blockers)
+    if (type === 'blocker' && feedFilters.dependency && item.dependency_person !== feedFilters.dependency) return false;
+    
+    // Date Range
+    if (feedFilters.dateFrom || feedFilters.dateTo) {
+      const itemDate = new Date(item.created_at);
+      // Strip time for accurate day comparison
+      itemDate.setHours(0,0,0,0);
+      
+      if (feedFilters.dateFrom) {
+        const fromD = new Date(feedFilters.dateFrom);
+        fromD.setHours(0,0,0,0);
+        if (itemDate < fromD) return false;
+      }
+      if (feedFilters.dateTo) {
+        const toD = new Date(feedFilters.dateTo);
+        toD.setHours(0,0,0,0);
+        if (itemDate > toD) return false;
+      }
+    }
+    return true;
+  });
+
   if (data.length === 0) {
-    container.innerHTML = `<p class="col-span-full text-center text-slate-400 py-10">No ${currentFeed} found.</p>`;
+    container.innerHTML = `<p class="col-span-full text-center text-slate-400 py-10">No ${currentFeed} found matching filters.</p>`;
     return;
   }
 
   data.forEach(item => {
-    const card = createFeedCard(item, type, currentUser);
+    const card = createFeedCard(item, type, currentUser, currentViewMode);
     container.appendChild(card);
   });
 };
@@ -375,6 +432,7 @@ const setupEventListeners = () => {
     const blockBtn = document.getElementById('tab-blockers');
     blockBtn.classList.remove('bg-white', 'shadow', 'text-indigo-700');
     blockBtn.classList.add('text-slate-600', 'hover:text-slate-800', 'hover:bg-white/50');
+    document.getElementById('filter-dependency-container').classList.add('hidden');
     renderFeed();
   });
 
@@ -388,7 +446,63 @@ const setupEventListeners = () => {
     const taskBtn = document.getElementById('tab-tasks');
     taskBtn.classList.remove('bg-white', 'shadow', 'text-indigo-700');
     taskBtn.classList.add('text-slate-600', 'hover:text-slate-800', 'hover:bg-white/50');
+    document.getElementById('filter-dependency-container').classList.remove('hidden');
     renderFeed();
+  });
+
+  // Filter Sub-tabs
+  document.getElementById('subtab-all').addEventListener('click', (e) => {
+    currentSubTab = 'All';
+    e.target.className = 'px-4 py-1.5 rounded-full bg-indigo-100 text-indigo-700 font-medium text-sm transition-colors border border-indigo-200';
+    document.getElementById('subtab-open').className = 'px-4 py-1.5 rounded-full bg-white text-slate-600 hover:bg-slate-100 font-medium text-sm transition-colors border border-slate-200';
+    renderFeed();
+  });
+
+  document.getElementById('subtab-open').addEventListener('click', (e) => {
+    currentSubTab = 'Open';
+    e.target.className = 'px-4 py-1.5 rounded-full bg-indigo-100 text-indigo-700 font-medium text-sm transition-colors border border-indigo-200';
+    document.getElementById('subtab-all').className = 'px-4 py-1.5 rounded-full bg-white text-slate-600 hover:bg-slate-100 font-medium text-sm transition-colors border border-slate-200';
+    renderFeed();
+  });
+
+  // View Toggles
+  document.getElementById('view-card').addEventListener('click', (e) => {
+    currentViewMode = 'card';
+    document.getElementById('view-card').className = 'p-1.5 rounded bg-slate-100 text-slate-800 transition-colors';
+    document.getElementById('view-list').className = 'p-1.5 rounded text-slate-400 hover:text-slate-800 transition-colors';
+    renderFeed();
+  });
+
+  document.getElementById('view-list').addEventListener('click', (e) => {
+    currentViewMode = 'list';
+    document.getElementById('view-list').className = 'p-1.5 rounded bg-slate-100 text-slate-800 transition-colors';
+    document.getElementById('view-card').className = 'p-1.5 rounded text-slate-400 hover:text-slate-800 transition-colors';
+    renderFeed();
+  });
+
+  // Feed Filters
+  const updateFilters = () => {
+    feedFilters.dateFrom = document.getElementById('filter-date-from').value;
+    feedFilters.dateTo = document.getElementById('filter-date-to').value;
+    feedFilters.person = document.getElementById('filter-person').value;
+    feedFilters.dependency = document.getElementById('filter-dependency').value;
+    feedFilters.status = document.getElementById('filter-status').value;
+    renderFeed();
+  };
+
+  document.getElementById('filter-date-from').addEventListener('change', updateFilters);
+  document.getElementById('filter-date-to').addEventListener('change', updateFilters);
+  document.getElementById('filter-person').addEventListener('change', updateFilters);
+  document.getElementById('filter-dependency').addEventListener('change', updateFilters);
+  document.getElementById('filter-status').addEventListener('change', updateFilters);
+
+  document.getElementById('btn-clear-filters').addEventListener('click', () => {
+    document.getElementById('filter-date-from').value = '';
+    document.getElementById('filter-date-to').value = '';
+    document.getElementById('filter-person').value = '';
+    document.getElementById('filter-dependency').value = '';
+    document.getElementById('filter-status').value = '';
+    updateFilters();
   });
 
   // Delegate Events for Feed Cards (Status Change & Comments)

@@ -50,9 +50,16 @@ export const populateDropdown = (selectId, options, includeOther = false) => {
   }
 };
 
-export const createFeedCard = (item, type, currentUser, handlers) => {
+export const createFeedCard = (item, type, currentUser, viewMode = 'card') => {
   const card = document.createElement('div');
-  card.className = 'glass p-5 rounded-xl mb-4 animate-fade-in flex flex-col gap-3';
+  
+  // Status Colors
+  let statusColorClass = 'border-slate-200';
+  if (item.status === 'Open') statusColorClass = 'border-blue-500 shadow-blue-500/10';
+  if (item.status === 'In Progress') statusColorClass = 'border-amber-500 shadow-amber-500/10';
+  if (item.status === 'Completed' || item.status === 'Resolved') statusColorClass = 'border-emerald-500 shadow-emerald-500/10';
+
+  card.className = `glass rounded-xl animate-fade-in flex border-t-4 ${statusColorClass} ${viewMode === 'card' ? 'flex-col p-5 gap-3 h-full' : 'flex-row items-center justify-between p-4 gap-4'}`;
   
   const date = new Date(item.created_at).toLocaleString();
   const title = type === 'task' ? item.task : item.blocker_desc;
@@ -91,24 +98,48 @@ export const createFeedCard = (item, type, currentUser, handlers) => {
     </div>
   ` : `<p class="text-xs text-slate-400 italic">Log in to comment.</p>`;
 
-  card.innerHTML = `
-    <div class="flex justify-between items-start">
-      <div>
-        <h4 class="font-bold text-lg text-slate-800">${item.name}</h4>
-        <p class="text-xs text-slate-500">${item.location} • ${date}</p>
+  if (viewMode === 'card') {
+    card.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div>
+          <h4 class="font-bold text-lg text-slate-800">${item.name}</h4>
+          <p class="text-xs text-slate-500">${item.location} • ${date}</p>
+        </div>
+        <div>${statusHtml}</div>
       </div>
-      <div>${statusHtml}</div>
-    </div>
-    <div class="py-2 text-slate-700">
-      <p class="text-[15px]">${title}</p>
-      ${dependencyHtml}
-    </div>
-    <div class="mt-2 border-t border-slate-100 pt-3">
-      <h5 class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Comments</h5>
-      <div class="comments-container mb-2">${commentsHtml}</div>
-      ${commentInputHtml}
-    </div>
-  `;
+      <div class="py-2 text-slate-700 flex-1">
+        <p class="text-[15px]">${title}</p>
+        ${dependencyHtml}
+      </div>
+      <div class="mt-auto border-t border-slate-100 pt-3">
+        <h5 class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Comments (${(item.comments || []).length})</h5>
+        <div class="comments-container mb-2 max-h-32 overflow-y-auto">${commentsHtml}</div>
+        ${commentInputHtml}
+      </div>
+    `;
+  } else {
+    // List View
+    card.innerHTML = `
+      <div class="flex-1 flex flex-col md:flex-row md:items-center gap-4">
+        <div class="w-48 flex-shrink-0">
+          <h4 class="font-bold text-base text-slate-800">${item.name}</h4>
+          <p class="text-xs text-slate-500">${date.split(',')[0]}</p>
+        </div>
+        <div class="flex-1 text-slate-700 text-sm">
+          <p>${title}</p>
+          ${dependencyHtml}
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="text-xs font-medium text-slate-500 whitespace-nowrap">
+          💬 ${(item.comments || []).length} Comments
+        </div>
+        <div class="flex-shrink-0">
+          ${statusHtml}
+        </div>
+      </div>
+    `;
+  }
 
   return card;
 };
