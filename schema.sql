@@ -210,6 +210,11 @@ begin
     insert into public.unique_students(usn, mobile, email)
     values (v_clean_usn, p_mobile, p_email)
     returning id into v_unique_student_id;
+  elsif v_clean_usn is not null then
+    -- If student was previously recorded without a USN (NULL), update USN now
+    update public.unique_students
+    set usn = v_clean_usn
+    where id = v_unique_student_id and (usn is null or usn = '');
   end if;
 
   -- 3. Check registration status
