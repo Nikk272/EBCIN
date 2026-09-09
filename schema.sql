@@ -110,10 +110,15 @@ create table if not exists public.student_attendance (
   mobile text not null,
   college_name text not null,
   usn text not null,
+  semester text not null,
   stream text not null,
   section text not null,
   room_number text
 );
+
+-- Migration for existing installations:
+-- alter table public.student_attendance add column if not exists semester text default 'Sem 5';
+-- update public.student_attendance set semester = 'Sem 5' where semester is null or trim(semester) = '';
 
 -- Enable RLS for student_attendance
 alter table public.student_attendance enable row level security;
@@ -123,6 +128,7 @@ create policy "Attendance can be created by anyone" on public.student_attendance
 
 -- Policy: Only authenticated users (admins) can view attendance
 create policy "Attendance is viewable by authenticated users" on public.student_attendance for select using (auth.role() = 'authenticated');
+create policy "Attendance can be updated by authenticated users" on public.student_attendance for update using (auth.role() = 'authenticated');
 
 -- Unique Students table
 create table if not exists public.unique_students (
@@ -148,6 +154,21 @@ create table if not exists public.registered_students (
 
 alter table public.registered_students enable row level security;
 create policy "Registered students viewable by authenticated users" on public.registered_students for select using (auth.role() = 'authenticated');
+create policy "Registered students can be inserted by authenticated users" on public.registered_students for insert with check (auth.role() = 'authenticated');
+create policy "Registered students can be updated by authenticated users" on public.registered_students for update using (auth.role() = 'authenticated');
+create policy "Registered students can be deleted by authenticated users" on public.registered_students for delete using (auth.role() = 'authenticated');
+
+-- Function to sync newly uploaded registered students with unique_students
+create or replace function public.sync_registered_students_with_unique()
+returns void as $$
+begin
+  update public.unique_students u
+  set enquiry_id = r.enquiry_id
+  from public.registered_students r
+  where u.enquiry_id is null
+    and (u.mobile = r.mobile or u.email = r.email);
+end;
+$$ language plpgsql security definer;
 
 -- RPC to handle attendance submission and registration logic
 create or replace function public.submit_attendance_and_check_registration(
@@ -156,6 +177,7 @@ create or replace function public.submit_attendance_and_check_registration(
   p_mobile text,
   p_college_name text,
   p_usn text,
+  p_semester text,
   p_stream text,
   p_section text,
   p_room_number text default null
@@ -166,8 +188,8 @@ declare
   v_is_registered boolean := false;
 begin
   -- 1. Insert attendance
-  insert into public.student_attendance(full_name, email, mobile, college_name, usn, stream, section, room_number)
-  values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_stream, p_section, p_room_number);
+  insert into public.student_attendance(full_name, email, mobile, college_name, usn, semester, stream, section, room_number)
+  values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_semester, p_stream, p_section, p_room_number);
 
   -- 2. Check unique_students
   select id, enquiry_id into v_unique_student_id, v_enquiry_id

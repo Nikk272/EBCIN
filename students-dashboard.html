@@ -37,15 +37,28 @@
         <div id="dynamic-filters" class="flex flex-wrap gap-2 w-full md:w-auto flex-1">
           <input type="date" id="filter-date" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500">
           <select id="filter-dropdown" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 bg-white min-w-[120px]"></select>
+          <select id="filter-semester" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 bg-white min-w-[120px]"><option value="">All Semesters</option></select>
           <select id="filter-stream" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 bg-white min-w-[120px]"><option value="">All Streams</option></select>
           <select id="filter-section" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 bg-white min-w-[120px]"><option value="">All Sections</option></select>
           <select id="filter-room" class="hidden px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 bg-white min-w-[120px]"><option value="">All Rooms</option></select>
         </div>
         
-        <!-- Search and Export -->
-        <div class="flex items-center gap-2 w-full md:w-auto">
-          <input type="text" id="search-input" placeholder="Search..." class="w-full md:w-64 px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-sm">
-          <button id="btn-export" class="w-full md:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 whitespace-nowrap">
+        <!-- Search and Export / Actions -->
+        <div class="flex items-center flex-wrap gap-2 w-full md:w-auto">
+          <input type="text" id="search-input" placeholder="Search..." class="w-full md:w-56 px-3.5 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-sm">
+          
+          <!-- Registered Students Specific Action Buttons (visible only on registered tab) -->
+          <button id="btn-download-template" class="hidden w-full sm:w-auto px-3.5 py-2 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Download Template
+          </button>
+          <button id="btn-upload-csv" class="hidden w-full sm:w-auto px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"></path></svg>
+            Upload CSV
+          </button>
+          <input type="file" id="input-csv-file" accept=".csv" class="hidden">
+
+          <button id="btn-export" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 whitespace-nowrap">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             Export CSV
           </button>
@@ -74,6 +87,123 @@
     </div>
 
   </main>
+
+  <!-- Upload CSV Modal -->
+  <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-slate-800" id="upload-modal-title">Upload Registered Students</h3>
+            <p class="text-xs text-slate-500" id="upload-modal-subtitle">Review file data before uploading to database</p>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Step 1: Preview & Validation View -->
+      <div id="upload-preview-view" class="p-6 flex-1 overflow-y-auto space-y-4">
+        <!-- File Stats Banner -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs text-indigo-900">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span class="font-medium truncate max-w-xs" id="file-name-display">students.csv</span>
+          </div>
+          <div class="flex items-center gap-3 font-semibold">
+            <span id="file-rows-count" class="bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-md">0 records detected</span>
+          </div>
+        </div>
+
+        <!-- Detected Mappings -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Detected Columns</label>
+          <div id="detected-columns-badges" class="flex flex-wrap gap-1.5 text-xs">
+            <!-- Badges injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Preview Table -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Data Preview (First 5 records)</label>
+          <div class="border border-slate-200 rounded-xl overflow-x-auto shadow-sm max-h-48">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200" id="preview-table-head">
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700" id="preview-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Uploading / Progress View -->
+      <div id="upload-progress-view" class="p-8 hidden flex-col items-center justify-center text-center space-y-4">
+        <div class="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center animate-pulse">
+          <svg class="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </div>
+        <div class="space-y-1">
+          <h4 class="text-base font-semibold text-slate-800">Uploading Records to Database...</h4>
+          <p class="text-xs text-slate-500" id="upload-progress-status">Processing records...</p>
+        </div>
+        <!-- Progress Bar Container -->
+        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200 max-w-md">
+          <div id="upload-progress-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+        </div>
+        <p class="text-xs font-semibold text-indigo-600" id="upload-progress-percent">0%</p>
+      </div>
+
+      <!-- Step 3: Completion / Result View -->
+      <div id="upload-result-view" class="p-6 hidden flex-col space-y-4">
+        <div class="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-emerald-900">Upload Process Complete!</h4>
+            <p class="text-xs text-emerald-700" id="upload-result-message">Students data has been imported successfully.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <p class="text-xs text-slate-500 font-medium">Total Records</p>
+            <p class="text-xl font-bold text-slate-800 mt-0.5" id="stat-total">0</p>
+          </div>
+          <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+            <p class="text-xs text-emerald-600 font-medium">Imported</p>
+            <p class="text-xl font-bold text-emerald-700 mt-0.5" id="stat-success">0</p>
+          </div>
+          <div class="p-3 bg-amber-50 border border-amber-100 rounded-xl">
+            <p class="text-xs text-amber-600 font-medium">Duplicates/Skipped</p>
+            <p class="text-xl font-bold text-amber-700 mt-0.5" id="stat-duplicates">0</p>
+          </div>
+        </div>
+
+        <div id="upload-error-log" class="hidden max-h-32 overflow-y-auto p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1">
+          <!-- Errors list if any -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2" id="upload-modal-footer">
+        <button id="btn-cancel-upload" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+        <button id="btn-confirm-upload" class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow transition-colors flex items-center gap-2">
+          <span>Start Upload</span>
+        </button>
+        <button id="btn-finish-upload" class="hidden px-5 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition-colors">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <script type="module" src="js/students-dashboard.js"></script>
 </body>

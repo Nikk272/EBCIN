@@ -217,6 +217,22 @@
                 <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001">
             </div>
 
+            <!-- Semester -->
+            <div class="form-group">
+                <label for="semester">Semester</label>
+                <select id="semester" name="semester" required>
+                    <option value="" disabled selected>Select your semester</option>
+                    <option value="Sem 1">Sem 1</option>
+                    <option value="Sem 2">Sem 2</option>
+                    <option value="Sem 3">Sem 3</option>
+                    <option value="Sem 4">Sem 4</option>
+                    <option value="Sem 5">Sem 5</option>
+                    <option value="Sem 6">Sem 6</option>
+                    <option value="Sem 7">Sem 7</option>
+                    <option value="Sem 8">Sem 8</option>
+                </select>
+            </div>
+
             <!-- Stream -->
             <div class="form-group">
                 <label for="stream">Stream</label>
@@ -301,6 +317,7 @@
                 mobile: document.getElementById('mobile').value,
                 college_name: selectedCollegeName,
                 usn: document.getElementById('usn').value,
+                semester: document.getElementById('semester').value,
                 stream: finalStream,
                 section: document.getElementById('section').value,
                 room_number: document.getElementById('roomNumber').value

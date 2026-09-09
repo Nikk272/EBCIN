@@ -89,6 +89,7 @@ export const submitAttendanceAndCheckRegistration = async (attendanceData) => {
     p_mobile: attendanceData.mobile,
     p_college_name: attendanceData.college_name,
     p_usn: attendanceData.usn,
+    p_semester: attendanceData.semester,
     p_stream: attendanceData.stream,
     p_section: attendanceData.section,
     p_room_number: attendanceData.room_number || null
@@ -117,7 +118,79 @@ export const fetchUniqueStudents = async () => {
 export const fetchRegisteredStudents = async () => {
   const { data, error } = await supabaseClient
     .from('registered_students')
-    .select('*');
+    .select('*')
+    .range(0, 4999);
   if (error) console.error('Error fetching registered students:', error);
   return data || [];
 };
+
+export const uploadRegisteredStudents = async (records, onProgress) => {
+  const batchSize = 50;
+  let successCount = 0;
+  let duplicateCount = 0;
+  let errors = [];
+  const total = records.length;
+
+  for (let i = 0; i < total; i += batchSize) {
+    const batch = records.slice(i, i + batchSize);
+    
+    // Attempt bulk upsert matching on enquiry_id
+    const { error } = await supabaseClient
+      .from('registered_students')
+      .upsert(batch, { onConflict: 'enquiry_id', ignoreDuplicates: false });
+
+    if (error) {
+      // If batch fails (e.g., unique key constraint on mobile/email or single bad record),
+      // process items in this batch one-by-one to salvage all valid rows
+      for (const item of batch) {
+        try {
+          const { error: singleErr } = await supabaseClient
+            .from('registered_students')
+            .upsert(item, { onConflict: 'enquiry_id' });
+
+          if (singleErr) {
+            const msg = singleErr.message || '';
+            if (msg.includes('duplicate key') || msg.includes('unique constraint') || singleErr.code === '23505') {
+              duplicateCount++;
+            } else {
+              errors.push(`Row ${item.name || item.enquiry_id || 'Unknown'}: ${msg}`);
+            }
+          } else {
+            successCount++;
+          }
+        } catch (itemErr) {
+          errors.push(`Row ${item.name || 'Unknown'}: ${itemErr.message}`);
+        }
+      }
+    } else {
+      successCount += batch.length;
+    }
+
+    if (onProgress) {
+      const current = Math.min(i + batchSize, total);
+      onProgress({
+        current,
+        total,
+        percentage: Math.round((current / total) * 100),
+        successCount,
+        duplicateCount,
+        errorsCount: errors.length
+      });
+    }
+  }
+
+  // Attempt to sync matching unique_students records if any
+  try {
+    await supabaseClient.rpc('sync_registered_students_with_unique');
+  } catch (syncErr) {
+    // Graceful fallback if RPC is not yet executed in database
+  }
+
+  return {
+    total,
+    successCount,
+    duplicateCount,
+    errors
+  };
+};
+
