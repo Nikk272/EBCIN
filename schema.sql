@@ -171,6 +171,8 @@ end;
 $$ language plpgsql security definer;
 
 -- RPC to handle attendance submission and registration logic
+drop function if exists public.submit_attendance_and_check_registration(text,text,text,text,text,text,text,text,text);
+
 create or replace function public.submit_attendance_and_check_registration(
   p_full_name text,
   p_email text,
