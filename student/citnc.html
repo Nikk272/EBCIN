@@ -182,12 +182,110 @@
 
         .submit-btn:active {
             transform: translateY(0);
-        }
-
-        @media (max-width: 640px) {
+        }        @media (max-width: 640px) {
             .form-container {
                 padding: 25px 20px;
             }
+        }
+
+        /* Popup Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            transform: scale(0.92);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .modal-icon.registered {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .modal-icon.unregistered {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .modal-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 10px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin: 0 0 24px;
+        }
+
+        .modal-btn {
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 12px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);
+        }
+
+        .modal-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
         }
     </style>
 </head>
@@ -205,7 +303,7 @@
             <!-- College Display -->
             <div class="college-display-card">
                 <div class="college-label">College</div>
-                <div class="college-name-text">Cambridge Institute of Technology – North Campus</div>
+                <div class="college-name-text">Cambridge Institute Of Technology North Campus</div>
             </div>
 
             <!-- Name -->
@@ -293,6 +391,16 @@
         </form>
     </div>
 
+    <!-- Popup Modal Card -->
+    <div id="redirectModal" class="modal-overlay">
+        <div class="modal-card">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <p id="modalMessage" class="modal-message"></p>
+            <button id="modalOkBtn" class="modal-btn">OK (10s)</button>
+        </div>
+    </div>
+
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
@@ -313,6 +421,50 @@
                 otherInput.removeAttribute('required');
                 otherInput.value = '';
             }
+        }
+
+        function showRedirectModal(isRegistered, redirectUrl) {
+            const modal = document.getElementById('redirectModal');
+            const iconContainer = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const messageEl = document.getElementById('modalMessage');
+            const okBtn = document.getElementById('modalOkBtn');
+
+            if (isRegistered) {
+                iconContainer.className = 'modal-icon registered';
+                iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+                titleEl.textContent = 'Account Found';
+                messageEl.textContent = 'We have found your LMS redirecting you to our LMS, please login.';
+            } else {
+                iconContainer.className = 'modal-icon unregistered';
+                iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                titleEl.textContent = 'Account Not Found';
+                messageEl.textContent = 'account not found, redirecting you to LMS, please create your account/sign up.';
+            }
+
+            modal.classList.add('active');
+
+            let countdown = 10;
+            okBtn.textContent = `OK (${countdown}s)`;
+
+            let redirected = false;
+            const navigate = () => {
+                if (redirected) return;
+                redirected = true;
+                clearInterval(timer);
+                window.location.href = redirectUrl;
+            };
+
+            const timer = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    navigate();
+                } else {
+                    okBtn.textContent = `OK (${countdown}s)`;
+                }
+            }, 1000);
+
+            okBtn.onclick = navigate;
         }
 
         window.handleFormSubmit = async function(event) {
@@ -339,13 +491,11 @@
 
             try {
                 const isRegistered = await submitAttendanceAndCheckRegistration(formData);
-                if (isRegistered) {
-                    window.location.href = "https://www.edubridgeindia.com/login";
-                } else if (REDIRECT_URL) {
-                    window.location.href = REDIRECT_URL;
-                } else {
-                    alert('Attendance recorded successfully!');
-                }
+                const targetUrl = isRegistered 
+                    ? "https://www.edubridgeindia.com/login" 
+                    : (REDIRECT_URL || "https://www.edubridgeindia.com/login");
+
+                showRedirectModal(isRegistered, targetUrl);
             } catch (error) {
                 console.error('Error!', error);
                 alert('Something went wrong. Please try again.');
