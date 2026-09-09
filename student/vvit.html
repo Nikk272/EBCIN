@@ -247,8 +247,8 @@
         }
 
         .modal-icon.unregistered {
-            background: #e0e7ff;
-            color: #4f46e5;
+            background: #ffedd5;
+            color: #ea580c;
         }
 
         .modal-icon svg {
@@ -283,6 +283,24 @@
             width: 100%;
             transition: all 0.2s ease;
             box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);
+        }
+
+        .modal-btn.registered {
+            background-color: #16a34a;
+            box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.25);
+        }
+
+        .modal-btn.registered:hover {
+            background-color: #15803d;
+        }
+
+        .modal-btn.unregistered {
+            background-color: #ea580c;
+            box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.25);
+        }
+
+        .modal-btn.unregistered:hover {
+            background-color: #c2410c;
         }
 
         .modal-btn:hover {
@@ -437,11 +455,13 @@
                 iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
                 titleEl.textContent = 'Account Found';
                 messageEl.textContent = 'Account verified! We found your LMS profile. Redirecting you to sign in...';
+                okBtn.className = 'modal-btn registered';
             } else {
                 iconContainer.className = 'modal-icon unregistered';
-                iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
                 titleEl.textContent = 'Account Not Found';
                 messageEl.textContent = 'Account not found! Redirecting you to EduBridge LMS. Please sign up to get started.';
+                okBtn.className = 'modal-btn unregistered';
             }
 
             modal.classList.add('active');
