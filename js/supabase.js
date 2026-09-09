@@ -108,11 +108,44 @@ export const fetchAllAttendance = async () => {
 };
 
 export const fetchUniqueStudents = async () => {
-  const { data, error } = await supabaseClient
+  const { data: uniqueData, error: uniqueError } = await supabaseClient
     .from('unique_students')
     .select('*');
-  if (error) console.error('Error fetching unique students:', error);
-  return data || [];
+  if (uniqueError) console.error('Error fetching unique students:', uniqueError);
+  
+  const { data: attendanceData } = await supabaseClient
+    .from('student_attendance')
+    .select('usn, mobile, email, college_name, stream, semester');
+
+  const attendanceMap = new Map();
+  if (attendanceData && attendanceData.length > 0) {
+    attendanceData.forEach(att => {
+      if (att.usn && att.usn.toLowerCase() !== 'na' && att.usn.toLowerCase() !== 'n/a' && att.usn.toLowerCase() !== 'none') {
+        attendanceMap.set(att.usn.toLowerCase(), att);
+      }
+      if (att.mobile) {
+        attendanceMap.set(att.mobile, att);
+      }
+      if (att.email) {
+        attendanceMap.set(att.email.toLowerCase(), att);
+      }
+    });
+  }
+
+  const enrichedData = (uniqueData || []).map(student => {
+    const attMatch = (student.usn && attendanceMap.get(student.usn.toLowerCase())) ||
+                     (student.mobile && attendanceMap.get(student.mobile)) ||
+                     (student.email && attendanceMap.get(student.email.toLowerCase()));
+    
+    return {
+      ...student,
+      college_name: student.college_name || attMatch?.college_name || '-',
+      stream: student.stream || attMatch?.stream || '-',
+      semester: student.semester || attMatch?.semester || '-'
+    };
+  });
+
+  return enrichedData;
 };
 
 export const fetchRegisteredStudents = async () => {

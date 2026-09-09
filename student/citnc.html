@@ -229,7 +229,7 @@
             <!-- USN Number -->
             <div class="form-group">
                 <label for="usn">USN Number <span>(University Registration Number)</span></label>
-                <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001 or NA">
+                <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001 or NA" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
             </div>
 
             <!-- Semester -->
@@ -298,8 +298,8 @@
     <script type="module">
         import { submitAttendanceAndCheckRegistration } from '../js/supabase.js';
 
-        const COLLEGE_NAME = "Cambridge Institute of Technology – North Campus";
-        const REDIRECT_URL = "https://www.edubridgeindia.com/college-excellence-program?academy=CAT6&utm_source=CAT6&utm_medium=ECA&utm_campaign=Internal";
+        const COLLEGE_NAME = "Cambridge Institute Of Technology North Campus";
+        const REDIRECT_URL = "https://www.edubridgeindia.com/college-excellence-program?academy=CAT7&utm_source=CAT7&utm_medium=ECA&utm_campaign=Internal";
 
         window.toggleOtherStream = function(selectElement) {
             const otherGroup = document.getElementById('otherStreamGroup');
@@ -330,7 +330,7 @@
                 email: document.getElementById('email').value,
                 mobile: document.getElementById('mobile').value,
                 college_name: COLLEGE_NAME,
-                usn: document.getElementById('usn').value,
+                usn: document.getElementById('usn').value.trim().toUpperCase(),
                 semester: document.getElementById('semester').value,
                 stream: finalStream,
                 section: document.getElementById('section').value,

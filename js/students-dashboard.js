@@ -71,16 +71,19 @@ const columnsConfig = {
     { key: 'email', label: 'Email' },
     { key: 'mobile', label: 'Mobile' },
     { key: 'college_name', label: 'College' },
-    { key: 'usn', label: 'USN' },
+    { key: 'usn', label: 'USN', format: val => val ? String(val).toUpperCase() : '-' },
     { key: 'semester', label: 'Semester' },
     { key: 'stream', label: 'Stream' },
     { key: 'section', label: 'Section' },
     { key: 'room_number', label: 'Room' }
   ],
   unique: [
-    { key: 'usn', label: 'USN' },
+    { key: 'usn', label: 'USN', format: val => val ? String(val).toUpperCase() : '-' },
     { key: 'mobile', label: 'Mobile' },
     { key: 'email', label: 'Email' },
+    { key: 'college_name', label: 'College' },
+    { key: 'stream', label: 'Stream' },
+    { key: 'semester', label: 'Semester' },
     { key: 'enquiry_id', label: 'Enquiry ID', htmlFormat: val => val || '<span class="text-slate-400 italic">Not Registered</span>', csvFormat: val => val || 'Not Registered' }
   ],
   registered: [
@@ -222,10 +225,16 @@ function updateFilterDropdown() {
   } else if (currentTab === 'unique') {
     filterDropdown.innerHTML += '<option value="registered">Registered</option><option value="not_registered">Not Registered</option>';
     
+    const streams = [...new Set(currentData.map(d => d.stream))].filter(s => s && s !== '-');
+    for (let s = 1; s <= 8; s++) {
+      filterSemester.innerHTML += `<option value="Sem ${s}">Sem ${s}</option>`;
+    }
+    streams.forEach(c => filterStream.innerHTML += `<option value="${c}">${c}</option>`);
+
     filterDate.classList.add('hidden');
     filterDropdown.classList.remove('hidden');
-    filterSemester.classList.add('hidden');
-    filterStream.classList.add('hidden');
+    filterSemester.classList.remove('hidden');
+    filterStream.classList.remove('hidden');
     filterSection.classList.add('hidden');
     filterRoom.classList.add('hidden');
   } else if (currentTab === 'registered') {
@@ -265,6 +274,8 @@ function applyFilter(query) {
     } else if (currentTab === 'unique') {
       if (currentFilters.dropdown === 'registered') matchesDropdown = !!item.enquiry_id;
       if (currentFilters.dropdown === 'not_registered') matchesDropdown = !item.enquiry_id;
+      if (currentFilters.semester) matchesSemester = item.semester === currentFilters.semester;
+      if (currentFilters.stream) matchesStream = item.stream === currentFilters.stream;
     } else if (currentTab === 'registered') {
       if (currentFilters.dropdown) matchesDropdown = item.center === currentFilters.dropdown;
     }

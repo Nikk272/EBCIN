@@ -136,8 +136,16 @@ create table if not exists public.unique_students (
   usn text unique,
   mobile text unique,
   email text unique,
+  college_name text,
+  stream text,
+  semester text,
   enquiry_id text
 );
+
+-- Migrations for existing unique_students table:
+-- alter table public.unique_students add column if not exists college_name text;
+-- alter table public.unique_students add column if not exists stream text;
+-- alter table public.unique_students add column if not exists semester text;
 
 alter table public.unique_students enable row level security;
 create policy "Unique students viewable by authenticated users" on public.unique_students for select using (auth.role() = 'authenticated');
@@ -190,12 +198,16 @@ declare
   v_is_registered boolean := false;
   v_clean_usn text := null;
 begin
-  -- Normalize USN: if user enters NA / N/A / NONE, treat as NULL for unique tracking
-  if p_usn is not null and upper(trim(p_usn)) not in ('NA', 'N/A', 'NONE', 'N.A.', '') then
-    v_clean_usn := trim(p_usn);
+  -- Normalize USN: convert to uppercase and trim; if user enters NA / N/A / NONE, treat as NULL for unique tracking
+  if p_usn is not null and trim(p_usn) <> '' then
+    p_usn := upper(trim(p_usn));
   end if;
 
-  -- 1. Insert attendance (preserves raw input string)
+  if p_usn is not null and p_usn not in ('NA', 'N/A', 'NONE', 'N.A.') then
+    v_clean_usn := p_usn;
+  end if;
+
+  -- 1. Insert attendance
   insert into public.student_attendance(full_name, email, mobile, college_name, usn, semester, stream, section, room_number)
   values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_semester, p_stream, p_section, p_room_number);
 
@@ -207,14 +219,17 @@ begin
 
   if v_unique_student_id is null then
     -- Insert new unique student (NULL usn is permitted multiple times under UNIQUE constraint)
-    insert into public.unique_students(usn, mobile, email)
-    values (v_clean_usn, p_mobile, p_email)
+    insert into public.unique_students(usn, mobile, email, college_name, stream, semester)
+    values (v_clean_usn, p_mobile, p_email, p_college_name, p_stream, p_semester)
     returning id into v_unique_student_id;
-  elsif v_clean_usn is not null then
-    -- If student was previously recorded without a USN (NULL), update USN now
+  else
+    -- Update unique_students record with latest details if missing
     update public.unique_students
-    set usn = v_clean_usn
-    where id = v_unique_student_id and (usn is null or usn = '');
+    set usn = coalesce(usn, v_clean_usn),
+        college_name = coalesce(college_name, p_college_name),
+        stream = coalesce(stream, p_stream),
+        semester = coalesce(semester, p_semester)
+    where id = v_unique_student_id;
   end if;
 
   -- 3. Check registration status
