@@ -434,12 +434,12 @@
                 iconContainer.className = 'modal-icon registered';
                 iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
                 titleEl.textContent = 'Account Found';
-                messageEl.textContent = 'We have found your LMS redirecting you to our LMS, please login.';
+                messageEl.textContent = 'Account verified! We found your LMS profile. Redirecting you to sign in...';
             } else {
                 iconContainer.className = 'modal-icon unregistered';
                 iconContainer.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
                 titleEl.textContent = 'Account Not Found';
-                messageEl.textContent = 'account not found, redirecting you to LMS, please create your account/sign up.';
+                messageEl.textContent = 'Account not found! Redirecting you to EduBridge LMS. Please sign up to get started.';
             }
 
             modal.classList.add('active');
