@@ -62,7 +62,7 @@ const columnsConfig = {
 async function init() {
   const session = await getSession();
   if (!session) {
-    window.location.href = 'index.html';
+    window.location.href = 'checkin.html';
     return;
   }
   
