@@ -84,6 +84,7 @@ const loadUsers = async () => {
 const updateAuthUI = (session) => {
   const loginNav = document.getElementById('nav-login');
   const dashboardNav = document.getElementById('nav-dashboard');
+  const studentsDashboardNav = document.getElementById('nav-students-dashboard');
   const userMenu = document.getElementById('user-menu');
   const usernameDisplay = document.getElementById('current-username-display');
   
@@ -94,6 +95,7 @@ const updateAuthUI = (session) => {
   if (session && currentUser) {
     loginNav.style.display = 'none';
     dashboardNav.style.display = 'block';
+    if (studentsDashboardNav) studentsDashboardNav.style.display = 'inline-block';
     userMenu.classList.remove('hidden');
     usernameDisplay.textContent = currentUser.username;
     
@@ -116,6 +118,7 @@ const updateAuthUI = (session) => {
   } else {
     loginNav.style.display = 'block';
     dashboardNav.style.display = 'none';
+    if (studentsDashboardNav) studentsDashboardNav.style.display = 'none';
     userMenu.classList.add('hidden');
     if (adminTabs) adminTabs.classList.add('hidden');
     if (adminPanel) adminPanel.classList.add('hidden');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edubridge | College Excellence Program - Attendance</title>
+    <title>Edubridge | Select Your College - Attendance</title>
     <!-- Google Fonts for Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -36,7 +36,7 @@
             min-height: 100vh;
         }
 
-        .form-container {
+        .portal-container {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -48,9 +48,9 @@
             max-width: 650px;
         }
 
-        .form-header {
+        .portal-header {
             text-align: center;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         .badge {
@@ -66,103 +66,56 @@
             margin-bottom: 12px;
         }
 
-        .form-header h2 {
+        .portal-header h2 {
             margin: 0 0 8px;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--text-main);
         }
 
-        .form-header p {
+        .portal-header p {
             margin: 0;
             font-size: 14px;
             color: var(--text-muted);
         }
 
-        .form-group {
-            margin-bottom: 22px;
+        .college-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 13px;
-            color: #374151;
-        }
-
-        label span {
-            font-weight: 400;
-            color: var(--text-muted);
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        select {
-            width: 100%;
-            padding: 12px 16px;
-            background-color: #f9fafb;
+        .college-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 16px 20px;
+            border-radius: 10px;
+            text-decoration: none;
             color: var(--text-main);
-            transition: all 0.25s ease;
-        }
-
-        input:hover, select:hover {
-            border-color: #9ca3af;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            background-color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px var(--primary-light);
-        }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-            background-size: 16px;
-            cursor: pointer;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .submit-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px 20px;
-            font-size: 15px;
             font-weight: 600;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            width: 100%;
-            border-radius: 8px;
-            cursor: pointer;
+            font-size: 15px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-            margin-top: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .submit-btn:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3);
+        .college-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+            color: var(--primary);
         }
 
-        .submit-btn:active {
-            transform: translateY(0);
+        .arrow-icon {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
         }
 
         @media (max-width: 640px) {
-            .form-container {
+            .portal-container {
                 padding: 25px 20px;
             }
         }
@@ -170,176 +123,40 @@
 </head>
 <body>
 
-    <div class="form-container">
-        <div class="form-header">
+    <div class="portal-container">
+        <div class="portal-header">
             <span class="badge">Edubridge</span>
             <h2>College Excellence Program</h2>
-            <p>Please fill in your Details to register session attendance.</p>
+            <p>Please select your college to access the session attendance form.</p>
         </div>
 
-        <form id="attendanceForm" onsubmit="handleFormSubmit(event)">
-            
-            <!-- Name -->
-            <div class="form-group">
-                <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" name="fullName" required placeholder="e.g. Alex Smith">
-            </div>
-
-            <!-- Mail ID -->
-            <div class="form-group">
-                <label for="email">Mail ID</label>
-                <input type="email" id="email" name="email" required placeholder="e.g. alex@college.edu">
-            </div>
-
-            <!-- Mobile Number -->
-            <div class="form-group">
-                <label for="mobile">Mobile Number</label>
-                <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" required placeholder="10-digit mobile number">
-            </div>
-
-            <!-- College Name & UTM Mapping -->
-            <div class="form-group">
-                <label for="college">College Name</label>
-                <select id="college" name="college" required>
-                    <option value="" disabled selected>Select your college</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CAT1&utm_source=CAT1&utm_medium=ECA&utm_campaign=Internal">IMPACT College of Engineering and Applied Sciences</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CAT6&utm_source=CAT6&utm_medium=ECA&utm_campaign=Internal">Cambridge Institute of Technology – North Campus</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CAT8&utm_source=CAT8&utm_medium=ECA&utm_campaign=Internal">A P S College Of Engineering</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CAT7&utm_source=CAT7&utm_medium=ECA&utm_campaign=Internal">Vivekananda Institute of Technology</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CAT9&utm_source=CAT9&utm_medium=ECA&utm_campaign=Internal">Sri Venkateshwara College Of Engineering</option>
-                    <option value="https://www.edubridgeindia.com/college-excellence-program?academy=CT10&utm_source=CT10&utm_medium=ECA&utm_campaign=Internal">Vijaya Vittala Institute of Technology</option>
-                </select>
-            </div>
-
-            <!-- USN Number -->
-            <div class="form-group">
-                <label for="usn">USN Number</label>
-                <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001">
-            </div>
-
-            <!-- Semester -->
-            <div class="form-group">
-                <label for="semester">Semester</label>
-                <select id="semester" name="semester" required>
-                    <option value="" disabled selected>Select your semester</option>
-                    <option value="Sem 1">Sem 1</option>
-                    <option value="Sem 2">Sem 2</option>
-                    <option value="Sem 3">Sem 3</option>
-                    <option value="Sem 4">Sem 4</option>
-                    <option value="Sem 5">Sem 5</option>
-                    <option value="Sem 6">Sem 6</option>
-                    <option value="Sem 7">Sem 7</option>
-                    <option value="Sem 8">Sem 8</option>
-                </select>
-            </div>
-
-            <!-- Stream -->
-            <div class="form-group">
-                <label for="stream">Stream</label>
-                <select id="stream" name="stream" onchange="toggleOtherStream(this)" required>
-                    <option value="" disabled selected>Select your stream</option>
-                    <option value="CSE">CSE</option>
-                    <option value="ISE">ISE</option>
-                    <option value="Cybersecurity">Cybersecurity</option>
-                    <option value="AIML">AIML</option>
-                    <option value="Mech">Mech</option>
-                    <option value="ECE">ECE</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <!-- Other Stream (Conditional Field) -->
-            <div class="form-group hidden" id="otherStreamGroup">
-                <label for="otherStream">Custom Stream Name</label>
-                <input type="text" id="otherStream" name="otherStream" placeholder="Type your stream">
-            </div>
-
-            <!-- Section -->
-            <div class="form-group">
-                <label for="section">Section <span>(Select 1 if your stream has no sections)</span></label>
-                <select id="section" name="section" required>
-                    <option value="" disabled selected>Select section</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-            </div>
-
-            <!-- Room Number -->
-            <div class="form-group">
-                <label for="roomNumber">Room Number <span>(Optional)</span></label>
-                <input type="text" id="roomNumber" name="roomNumber" placeholder="e.g. 101 or Lab 2">
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="submit-btn">Submit & Continue</button>
-        </form>
+        <div class="college-list">
+            <a href="student/impact.html" class="college-card">
+                <span>IMPACT College of Engineering and Applied Sciences</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+            <a href="student/citnc.html" class="college-card">
+                <span>Cambridge Institute of Technology – North Campus</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+            <a href="student/apsce.html" class="college-card">
+                <span>A P S College Of Engineering</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+            <a href="student/vkit.html" class="college-card">
+                <span>Vivekananda Institute of Technology</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+            <a href="student/svce.html" class="college-card">
+                <span>Sri Venkateshwara College Of Engineering</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+            <a href="student/vvit.html" class="college-card">
+                <span>Vijaya Vittala Institute of Technology</span>
+                <span class="arrow-icon">&rarr;</span>
+            </a>
+        </div>
     </div>
-
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module">
-        import { submitAttendanceAndCheckRegistration } from './js/supabase.js';
-
-        window.toggleOtherStream = function(selectElement) {
-            const otherGroup = document.getElementById('otherStreamGroup');
-            const otherInput = document.getElementById('otherStream');
-            
-            if (selectElement.value === 'Other') {
-                otherGroup.classList.remove('hidden');
-                otherInput.setAttribute('required', 'true');
-            } else {
-                otherGroup.classList.add('hidden');
-                otherInput.removeAttribute('required');
-                otherInput.value = '';
-            }
-        }
-
-        window.handleFormSubmit = async function(event) {
-            event.preventDefault(); 
-
-            const submitBtn = document.querySelector('.submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting Attendance...';
-
-            const collegeDropdown = document.getElementById('college');
-            const selectedUrl = collegeDropdown.value;
-            const selectedCollegeName = collegeDropdown.options[collegeDropdown.selectedIndex].text;
-
-            const streamSelect = document.getElementById('stream').value;
-            const finalStream = (streamSelect === 'Other') ? document.getElementById('otherStream').value : streamSelect;
-
-            const formData = {
-                full_name: document.getElementById('fullName').value,
-                email: document.getElementById('email').value,
-                mobile: document.getElementById('mobile').value,
-                college_name: selectedCollegeName,
-                usn: document.getElementById('usn').value,
-                semester: document.getElementById('semester').value,
-                stream: finalStream,
-                section: document.getElementById('section').value,
-                room_number: document.getElementById('roomNumber').value
-            };
-
-            try {
-                const isRegistered = await submitAttendanceAndCheckRegistration(formData);
-                if (isRegistered) {
-                    window.location.href = "https://www.edubridgeindia.com/login";
-                } else if (selectedUrl) {
-                    window.location.href = selectedUrl;
-                } else {
-                    alert('Attendance recorded successfully!');
-                }
-            } catch (error) {
-                console.error('Error!', error);
-                alert('Something went wrong. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit & Continue';
-            }
-        }
-    </script>
 
 </body>
 </html>
