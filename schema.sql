@@ -186,21 +186,27 @@ declare
   v_unique_student_id uuid;
   v_enquiry_id text;
   v_is_registered boolean := false;
+  v_clean_usn text := null;
 begin
-  -- 1. Insert attendance
+  -- Normalize USN: if user enters NA / N/A / NONE, treat as NULL for unique tracking
+  if p_usn is not null and upper(trim(p_usn)) not in ('NA', 'N/A', 'NONE', 'N.A.', '') then
+    v_clean_usn := trim(p_usn);
+  end if;
+
+  -- 1. Insert attendance (preserves raw input string)
   insert into public.student_attendance(full_name, email, mobile, college_name, usn, semester, stream, section, room_number)
   values (p_full_name, p_email, p_mobile, p_college_name, p_usn, p_semester, p_stream, p_section, p_room_number);
 
-  -- 2. Check unique_students
+  -- 2. Check unique_students (matching by clean USN, mobile, or email)
   select id, enquiry_id into v_unique_student_id, v_enquiry_id
   from public.unique_students
-  where usn = p_usn or mobile = p_mobile or email = p_email
+  where (v_clean_usn is not null and usn = v_clean_usn) or mobile = p_mobile or email = p_email
   limit 1;
 
   if v_unique_student_id is null then
-    -- Insert new
+    -- Insert new unique student (NULL usn is permitted multiple times under UNIQUE constraint)
     insert into public.unique_students(usn, mobile, email)
-    values (p_usn, p_mobile, p_email)
+    values (v_clean_usn, p_mobile, p_email)
     returning id into v_unique_student_id;
   end if;
 
