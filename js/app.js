@@ -50,10 +50,11 @@ const locationSelect = document.getElementById('ci-location');
 
 // Initialize
 const init = async () => {
+  setupEventListeners();
   await loadUsers();
   
-  // Handle password reset hash
-  if (window.location.hash.includes('type=recovery')) {
+  // Handle password reset link (hash or query param)
+  if (window.location.href.includes('type=recovery')) {
     showView('view-reset-password');
     return;
   }
@@ -67,8 +68,6 @@ const init = async () => {
   } else {
     showView('view-checkin');
   }
-
-  setupEventListeners();
 };
 
 const loadUsers = async () => {

@@ -59,7 +59,7 @@ export const login = async (identifier, password) => {
 export const resetPassword = async (identifier) => {
   const email = await getEmailFromIdentifier(identifier);
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
+    redirectTo: window.location.href.split('#')[0],
   });
   if (error) throw error;
 };
