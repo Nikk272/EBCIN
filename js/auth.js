@@ -5,17 +5,18 @@ export let currentUser = null;
 
 // Helper to resolve identifier (username or email) to email
 export const getEmailFromIdentifier = async (identifier) => {
-  if (identifier.includes('@')) return identifier;
+  const cleanId = identifier.trim();
+  if (cleanId.includes('@')) return cleanId.toLowerCase();
   
   const { data, error } = await supabaseClient
     .from('profiles')
     .select('email')
-    .eq('username', identifier)
-    .single();
+    .ilike('username', cleanId)
+    .maybeSingle();
   if (error || !data || !data.email) {
     throw new Error('User not found or has no email associated.');
   }
-  return data.email;
+  return data.email.toLowerCase();
 };
 
 export const getSession = async () => {
