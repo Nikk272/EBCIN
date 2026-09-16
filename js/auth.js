@@ -57,11 +57,14 @@ export const login = async (identifier, password) => {
 };
 
 export const resetPassword = async (identifier) => {
-  const email = await getEmailFromIdentifier(identifier);
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.href.split('#')[0],
-  });
+  const email = await getEmailFromIdentifier(identifier.trim());
+  const options = {};
+  if (window.location.protocol.startsWith('http')) {
+    options.redirectTo = window.location.href.split('#')[0];
+  }
+  const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, options);
   if (error) throw error;
+  return data;
 };
 
 export const updatePassword = async (newPassword) => {

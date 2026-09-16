@@ -364,13 +364,14 @@ const setupEventListeners = () => {
 
   document.getElementById('form-forgot-password')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const identifier = document.getElementById('forgot-identifier').value;
+    const identifier = document.getElementById('forgot-identifier').value.trim();
     try {
       await resetPassword(identifier);
       showToast('Reset link sent to your email.');
       showView('view-login');
     } catch (err) {
-      showToast(err.message, 'error');
+      console.error('Password reset error:', err);
+      showToast(err.message || 'Failed to send reset link.', 'error');
     }
   });
 
