@@ -158,14 +158,52 @@ export const fetchRegisteredStudents = async () => {
 };
 
 export const uploadRegisteredStudents = async (records, onProgress) => {
+  // Clean records: convert empty strings to null to avoid unique constraint collisions on ""
+  const cleanedRecords = records.map(r => ({
+    name: r.name ? (r.name.trim() || null) : null,
+    mobile: r.mobile ? (r.mobile.trim() || null) : null,
+    email: r.email ? (r.email.trim() || null) : null,
+    center: r.center ? (r.center.trim() || null) : null,
+    enquiry_id: r.enquiry_id ? (r.enquiry_id.trim() || null) : null
+  }));
+
+  // Try high-performance RPC first for atomic bulk upsert
+  try {
+    const { data, error } = await supabaseClient.rpc('bulk_upsert_registered_students', {
+      p_records: cleanedRecords
+    });
+
+    if (!error && data) {
+      if (onProgress) {
+        onProgress({
+          current: records.length,
+          total: records.length,
+          percentage: 100,
+          successCount: data.successCount || 0,
+          duplicateCount: data.duplicateCount || 0,
+          errorsCount: data.errorsCount || 0
+        });
+      }
+      return {
+        total: records.length,
+        successCount: data.successCount || 0,
+        duplicateCount: data.duplicateCount || 0,
+        errors: []
+      };
+    }
+  } catch (rpcErr) {
+    console.warn('RPC bulk_upsert_registered_students not available, falling back to direct batching:', rpcErr);
+  }
+
+  // Fallback to client-side batching using cleaned records
   const batchSize = 50;
   let successCount = 0;
   let duplicateCount = 0;
   let errors = [];
-  const total = records.length;
+  const total = cleanedRecords.length;
 
   for (let i = 0; i < total; i += batchSize) {
-    const batch = records.slice(i, i + batchSize);
+    const batch = cleanedRecords.slice(i, i + batchSize);
     
     // Attempt bulk upsert matching on enquiry_id
     const { error } = await supabaseClient
@@ -173,8 +211,7 @@ export const uploadRegisteredStudents = async (records, onProgress) => {
       .upsert(batch, { onConflict: 'enquiry_id', ignoreDuplicates: false });
 
     if (error) {
-      // If batch fails (e.g., unique key constraint on mobile/email or single bad record),
-      // process items in this batch one-by-one to salvage all valid rows
+      // If batch fails, process items in this batch one-by-one to salvage valid rows
       for (const item of batch) {
         try {
           const { error: singleErr } = await supabaseClient

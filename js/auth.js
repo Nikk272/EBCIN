@@ -3,6 +3,15 @@ import { supabaseClient } from './supabase.js';
 // State to hold the currently logged-in user profile
 export let currentUser = null;
 
+// Helper to get redirect URL pointing to /checkin/
+const getCheckinRedirectUrl = () => {
+  if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+    const origin = window.location.origin;
+    return origin.endsWith('/') ? `${origin}checkin/` : `${origin}/checkin/`;
+  }
+  return 'https://team.attendancenow.online/checkin/';
+};
+
 // Helper to resolve identifier (username or email) to email
 export const getEmailFromIdentifier = async (identifier) => {
   const cleanId = identifier.trim();
@@ -59,10 +68,9 @@ export const login = async (identifier, password) => {
 
 export const resetPassword = async (identifier) => {
   const email = await getEmailFromIdentifier(identifier.trim());
-  const options = {};
-  if (window.location.protocol.startsWith('http')) {
-    options.redirectTo = window.location.href.split('#')[0];
-  }
+  const options = {
+    redirectTo: getCheckinRedirectUrl()
+  };
   const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, options);
   if (error) throw error;
   return data;
@@ -86,6 +94,7 @@ export const adminCreateUser = async (email, username, password, role) => {
     email,
     password,
     options: {
+      emailRedirectTo: getCheckinRedirectUrl(),
       data: {
         username: username,
         role: role
@@ -96,3 +105,15 @@ export const adminCreateUser = async (email, username, password, role) => {
   if (error) throw error;
   return data;
 };
+
+export const adminUpdateUser = async (userId, { username, email, role, password }) => {
+  const { error } = await supabaseClient.rpc('admin_update_user', {
+    user_id: userId,
+    new_username: username || null,
+    new_email: email || null,
+    new_role: role || null,
+    new_password: password || null
+  });
+  if (error) throw error;
+};
+

@@ -3,11 +3,13 @@ import {
   login, 
   logout, 
   adminCreateUser, 
+  adminUpdateUser,
   currentUser,
   resetPassword,
   updatePassword
 } from './auth.js';
 import { 
+  supabaseClient,
   fetchUsers, 
   submitTasks, 
   submitBlockers, 
@@ -49,12 +51,28 @@ const blockersContainer = document.getElementById('blockers-container');
 const locationSelect = document.getElementById('ci-location');
 
 // Initialize
+let isPasswordRecoveryMode = false;
+
 const init = async () => {
   setupEventListeners();
   await loadUsers();
   
+  // Listen for Supabase password recovery auth event
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      isPasswordRecoveryMode = true;
+      showView('view-reset-password');
+    }
+  });
+
   // Handle password reset link (hash or query param)
-  if (window.location.href.includes('type=recovery')) {
+  const isRecovery = window.location.href.includes('type=recovery') || 
+                     window.location.hash.includes('type=recovery') || 
+                     window.location.search.includes('type=recovery');
+
+  if (isRecovery || isPasswordRecoveryMode) {
+    isPasswordRecoveryMode = true;
+    await getSession();
     showView('view-reset-password');
     return;
   }
@@ -381,10 +399,53 @@ const setupEventListeners = () => {
     try {
       await updatePassword(newPassword);
       showToast('Password updated successfully!');
-      window.history.replaceState(null, null, ' ');
-      window.location.reload();
+      
+      isPasswordRecoveryMode = false;
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.pathname);
+      }
+      
+      const session = await getSession();
+      updateAuthUI(session);
+      showView('view-dashboard');
+      loadDashboard();
+      
+      document.getElementById('form-reset-password').reset();
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  });
+
+  // Edit User Modal Handlers
+  const closeEditModal = () => {
+    const modal = document.getElementById('modal-edit-user');
+    if (modal) modal.classList.add('hidden');
+    const form = document.getElementById('form-edit-user');
+    if (form) form.reset();
+  };
+  document.getElementById('btn-close-edit-modal')?.addEventListener('click', closeEditModal);
+  document.getElementById('btn-cancel-edit-user')?.addEventListener('click', closeEditModal);
+
+  document.getElementById('form-edit-user')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-user-id').value;
+    const username = document.getElementById('edit-user-username').value.trim();
+    const email = document.getElementById('edit-user-email').value.trim();
+    const role = document.getElementById('edit-user-role').value;
+    const password = document.getElementById('edit-user-password').value.trim();
+    const errDiv = document.getElementById('edit-user-error');
+
+    try {
+      errDiv.classList.add('hidden');
+      await adminUpdateUser(id, { username, email, role, password });
+      showToast('User updated successfully!');
+      closeEditModal();
+      await loadUsers();
+      renderAdminUserList();
+    } catch (err) {
+      console.error('Update user error:', err);
+      errDiv.textContent = err.message || 'Failed to update user.';
+      errDiv.classList.remove('hidden');
     }
   });
 
@@ -605,7 +666,7 @@ const renderAdminUserList = () => {
       </div>
       ${u.username !== 'admin' ? `
       <div class="flex gap-2">
-        <button class="text-xs text-indigo-500 hover:text-indigo-700 font-medium edit-user-btn" data-id="${u.id}" data-username="${u.username}" data-role="${u.role}">Edit</button>
+        <button class="text-xs text-indigo-500 hover:text-indigo-700 font-medium edit-user-btn" data-id="${u.id}" data-username="${u.username}" data-email="${u.email || ''}" data-role="${u.role}">Edit</button>
         <button class="text-xs text-red-500 hover:text-red-700 font-medium delete-user-btn" data-id="${u.id}">Delete</button>
       </div>` : ''}
     `;
@@ -632,29 +693,20 @@ const renderAdminUserList = () => {
   });
 
   list.querySelectorAll('.edit-user-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', (e) => {
       const id = e.target.dataset.id;
-      const oldU = e.target.dataset.username;
-      const oldR = e.target.dataset.role;
-      
-      const newU = prompt('Enter new username:', oldU);
-      if (!newU) return;
-      const newR = prompt('Enter new role (admin or user):', oldR);
-      if (newR !== 'admin' && newR !== 'user') return alert('Invalid role');
-      
-      try {
-        const { error } = await supabaseClient.rpc('admin_update_user', { 
-          user_id: id, 
-          new_username: newU, 
-          new_role: newR 
-        });
-        if (error) throw error;
-        showToast('User updated.');
-        await loadUsers();
-        renderAdminUserList();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
+      const username = e.target.dataset.username;
+      const email = e.target.dataset.email;
+      const role = e.target.dataset.role;
+
+      document.getElementById('edit-user-id').value = id;
+      document.getElementById('edit-user-username').value = username;
+      document.getElementById('edit-user-email').value = email;
+      document.getElementById('edit-user-role').value = role;
+      document.getElementById('edit-user-password').value = '';
+      document.getElementById('edit-user-error').classList.add('hidden');
+
+      document.getElementById('modal-edit-user').classList.remove('hidden');
     });
   });
 };

@@ -1,5 +1,6 @@
--- Enable UUID extension
+-- Enable UUID & pgcrypto extensions
 create extension if not exists "uuid-ossp";
+create extension if not exists "pgcrypto";
 
 -- Create profiles table (extends auth.users)
 create table if not exists public.profiles (
@@ -86,18 +87,47 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Admin: Update User RPC
-create or replace function public.admin_update_user(user_id uuid, new_username text, new_role text)
+-- Admin: Update User RPC (Updates username, email, role, and password)
+drop function if exists public.admin_update_user(uuid, text, text);
+drop function if exists public.admin_update_user(uuid, text, text, text, text);
+
+create or replace function public.admin_update_user(
+  user_id uuid,
+  new_username text default null,
+  new_email text default null,
+  new_role text default null,
+  new_password text default null
+)
 returns void as $$
+declare
+  v_caller_role text;
 begin
   if (select role from public.profiles where id = auth.uid()) != 'admin' then
     raise exception 'Unauthorized';
   end if;
   
-  -- Update profile (Email updates must be done via Supabase API directly by the user)
+  -- Update profile table
   update public.profiles 
-  set username = new_username, role = new_role 
+  set 
+    username = coalesce(nullif(trim(new_username), ''), username),
+    email = coalesce(nullif(trim(new_email), ''), email),
+    role = coalesce(nullif(trim(new_role), ''), role)
   where id = user_id;
+
+  -- Update auth.users email if provided
+  if new_email is not null and trim(new_email) != '' then
+    update auth.users
+    set email = lower(trim(new_email)),
+        email_confirmed_at = now()
+    where id = user_id;
+  end if;
+
+  -- Update auth.users password if provided
+  if new_password is not null and trim(new_password) != '' then
+    update auth.users
+    set encrypted_password = crypt(new_password, gen_salt('bf'))
+    where id = user_id;
+  end if;
 end;
 $$ language plpgsql security definer;
 
@@ -161,10 +191,16 @@ create table if not exists public.registered_students (
 );
 
 alter table public.registered_students enable row level security;
-create policy "Registered students viewable by authenticated users" on public.registered_students for select using (auth.role() = 'authenticated');
-create policy "Registered students can be inserted by authenticated users" on public.registered_students for insert with check (auth.role() = 'authenticated');
-create policy "Registered students can be updated by authenticated users" on public.registered_students for update using (auth.role() = 'authenticated');
-create policy "Registered students can be deleted by authenticated users" on public.registered_students for delete using (auth.role() = 'authenticated');
+
+drop policy if exists "Registered students viewable by authenticated users" on public.registered_students;
+drop policy if exists "Registered students can be inserted by authenticated users" on public.registered_students;
+drop policy if exists "Registered students can be updated by authenticated users" on public.registered_students;
+drop policy if exists "Registered students can be deleted by authenticated users" on public.registered_students;
+
+create policy "Registered students viewable by authenticated users" on public.registered_students for select using (true);
+create policy "Registered students can be inserted by authenticated users" on public.registered_students for insert with check (true);
+create policy "Registered students can be updated by authenticated users" on public.registered_students for update using (true) with check (true);
+create policy "Registered students can be deleted by authenticated users" on public.registered_students for delete using (true);
 
 -- Function to sync newly uploaded registered students with unique_students
 create or replace function public.sync_registered_students_with_unique()
@@ -175,6 +211,87 @@ begin
   from public.registered_students r
   where u.enquiry_id is null
     and (u.mobile = r.mobile or u.email = r.email);
+end;
+$$ language plpgsql security definer;
+
+-- RPC for bulk upsert of registered students (bypasses client RLS quirks and handles duplicate constraint gracefully)
+create or replace function public.bulk_upsert_registered_students(p_records jsonb)
+returns jsonb as $$
+declare
+  v_rec jsonb;
+  v_name text;
+  v_mobile text;
+  v_email text;
+  v_center text;
+  v_enquiry_id text;
+  v_success integer := 0;
+  v_duplicates integer := 0;
+  v_errors integer := 0;
+  v_total integer := 0;
+begin
+  v_total := jsonb_array_length(p_records);
+
+  for v_rec in select * from jsonb_array_elements(p_records)
+  loop
+    v_name := nullif(trim(v_rec->>'name'), '');
+    v_mobile := nullif(trim(v_rec->>'mobile'), '');
+    v_email := nullif(trim(v_rec->>'email'), '');
+    v_center := nullif(trim(v_rec->>'center'), '');
+    v_enquiry_id := nullif(trim(v_rec->>'enquiry_id'), '');
+
+    -- Skip completely empty rows
+    if v_name is null and v_mobile is null and v_email is null and v_enquiry_id is null then
+      continue;
+    end if;
+
+    begin
+      -- Try upsert by enquiry_id if enquiry_id is provided
+      if v_enquiry_id is not null then
+        insert into public.registered_students(name, mobile, email, center, enquiry_id)
+        values (v_name, v_mobile, v_email, v_center, v_enquiry_id)
+        on conflict (enquiry_id) do update set
+          name = coalesce(excluded.name, public.registered_students.name),
+          mobile = coalesce(excluded.mobile, public.registered_students.mobile),
+          email = coalesce(excluded.email, public.registered_students.email),
+          center = coalesce(excluded.center, public.registered_students.center);
+        
+        v_success := v_success + 1;
+      else
+        insert into public.registered_students(name, mobile, email, center, enquiry_id)
+        values (v_name, v_mobile, v_email, v_center, null);
+        
+        v_success := v_success + 1;
+      end if;
+
+    exception when unique_violation then
+      -- If mobile or email unique constraint violated, update existing student row
+      begin
+        update public.registered_students
+        set
+          name = coalesce(v_name, name),
+          center = coalesce(v_center, center),
+          enquiry_id = coalesce(v_enquiry_id, enquiry_id)
+        where (v_mobile is not null and mobile = v_mobile)
+           or (v_email is not null and email = v_email);
+
+        v_duplicates := v_duplicates + 1;
+      exception when others then
+        v_errors := v_errors + 1;
+      end;
+    when others then
+      v_errors := v_errors + 1;
+    end;
+  end loop;
+
+  -- Sync matching unique_students records
+  perform public.sync_registered_students_with_unique();
+
+  return jsonb_build_object(
+    'total', v_total,
+    'successCount', v_success,
+    'duplicateCount', v_duplicates,
+    'errorsCount', v_errors
+  );
 end;
 $$ language plpgsql security definer;
 

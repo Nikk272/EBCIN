@@ -42,6 +42,7 @@ async function createUsers() {
           email: email,
           password: password,
           email_confirm: true, // Auto-confirm email so they don't have to verify
+          email_redirect_to: 'https://team.attendancenow.online/checkin/',
           user_metadata: {
             username: username,
             role: role.toLowerCase()
