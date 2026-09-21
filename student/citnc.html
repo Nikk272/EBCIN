@@ -472,7 +472,7 @@
                 if (redirected) return;
                 redirected = true;
                 clearInterval(timer);
-                window.location.href = redirectUrl;
+                window.open(redirectUrl, '_blank');
             };
 
             const timer = setInterval(() => {

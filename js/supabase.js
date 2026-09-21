@@ -99,12 +99,61 @@ export const submitAttendanceAndCheckRegistration = async (attendanceData) => {
 };
 
 export const fetchAllAttendance = async () => {
-  const { data, error } = await supabaseClient
+  const { data: attendanceData, error } = await supabaseClient
     .from('student_attendance')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) console.error('Error fetching attendance:', error);
-  return data || [];
+  if (!attendanceData || attendanceData.length === 0) return [];
+
+  try {
+    const [{ data: registeredData }, { data: uniqueData }] = await Promise.all([
+      supabaseClient.from('registered_students').select('mobile, email, enquiry_id'),
+      supabaseClient.from('unique_students').select('usn, mobile, email, enquiry_id')
+    ]);
+
+    const regMap = new Map();
+    if (registeredData && registeredData.length > 0) {
+      registeredData.forEach(reg => {
+        if (reg.enquiry_id) {
+          if (reg.mobile) regMap.set(reg.mobile.trim(), reg.enquiry_id);
+          if (reg.email) regMap.set(reg.email.trim().toLowerCase(), reg.enquiry_id);
+        }
+      });
+    }
+
+    const uniqueMap = new Map();
+    if (uniqueData && uniqueData.length > 0) {
+      uniqueData.forEach(u => {
+        if (u.enquiry_id) {
+          if (u.usn && u.usn.toLowerCase() !== 'na' && u.usn.toLowerCase() !== 'n/a' && u.usn.toLowerCase() !== 'none') {
+            uniqueMap.set(u.usn.trim().toLowerCase(), u.enquiry_id);
+          }
+          if (u.mobile) uniqueMap.set(u.mobile.trim(), u.enquiry_id);
+          if (u.email) uniqueMap.set(u.email.trim().toLowerCase(), u.enquiry_id);
+        }
+      });
+    }
+
+    return attendanceData.map(att => {
+      const cleanUsn = att.usn ? att.usn.trim().toLowerCase() : '';
+      const cleanMobile = att.mobile ? att.mobile.trim() : '';
+      const cleanEmail = att.email ? att.email.trim().toLowerCase() : '';
+
+      const enquiryId = (cleanUsn && uniqueMap.get(cleanUsn)) ||
+                        (cleanMobile && (regMap.get(cleanMobile) || uniqueMap.get(cleanMobile))) ||
+                        (cleanEmail && (regMap.get(cleanEmail) || uniqueMap.get(cleanEmail))) ||
+                        null;
+
+      return {
+        ...att,
+        enquiry_id: enquiryId
+      };
+    });
+  } catch (enrichError) {
+    console.error('Error enriching attendance with enquiry_id:', enrichError);
+    return attendanceData;
+  }
 };
 
 export const fetchUniqueStudents = async () => {

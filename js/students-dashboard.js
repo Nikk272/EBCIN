@@ -72,6 +72,7 @@ const columnsConfig = {
     { key: 'mobile', label: 'Mobile' },
     { key: 'college_name', label: 'College' },
     { key: 'usn', label: 'USN', format: val => val ? String(val).toUpperCase() : '-' },
+    { key: 'enquiry_id', label: 'Enquiry ID', htmlFormat: val => val || '<span class="text-slate-400 italic">Not Registered</span>', csvFormat: val => val || 'Not Registered' },
     { key: 'semester', label: 'Semester' },
     { key: 'stream', label: 'Stream' },
     { key: 'section', label: 'Section' },
