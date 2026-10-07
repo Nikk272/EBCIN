@@ -190,7 +190,49 @@
             }
         }
 
-        /* Popup Modal Styles */
+        .pill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .pill-grid.stream-grid {
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        }
+
+        .pill-grid.section-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .pill-btn {
+            background: #f8fafc;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .pill-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .pill-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+        }
+
+        /* Modal Overlay Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -307,6 +349,92 @@
             background-color: var(--primary-hover);
             transform: translateY(-1px);
         }
+
+        /* Confirmation Review Modal */
+        .confirm-modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: left;
+            transform: scale(0.92);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .confirm-modal-card {
+            transform: scale(1);
+        }
+
+        .confirm-modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 6px;
+        }
+
+        .confirm-modal-sub {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0 0 16px;
+        }
+
+        .confirm-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 19px;
+        }
+
+        .confirm-item:last-child {
+            border-bottom: none;
+        }
+
+        .confirm-label {
+            color: #4b5563;
+            font-weight: 700;
+        }
+
+        .confirm-value {
+            font-weight: 800;
+            color: #111827;
+            font-size: 19px;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            flex: 1;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .btn-confirm {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            flex: 2;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -350,36 +478,36 @@
                 <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001 or NA" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
             </div>
 
-            <!-- Semester -->
+            <!-- Semester (Visual Radio Pills) -->
             <div class="form-group">
-                <label for="semester">Semester</label>
-                <select id="semester" name="semester" required>
-                    <option value="" disabled selected>Select your semester</option>
-                    <option value="Sem 1">Sem 1</option>
-                    <option value="Sem 2">Sem 2</option>
-                    <option value="Sem 3">Sem 3</option>
-                    <option value="Sem 4">Sem 4</option>
-                    <option value="Sem 5">Sem 5</option>
-                    <option value="Sem 6">Sem 6</option>
-                    <option value="Sem 7">Sem 7</option>
-                    <option value="Sem 8">Sem 8</option>
-                </select>
+                <label>Semester</label>
+                <input type="hidden" id="semester" name="semester" required>
+                <div class="pill-grid" id="semesterGroup">
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 1', this)">Sem 1</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 2', this)">Sem 2</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 3', this)">Sem 3</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 4', this)">Sem 4</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 5', this)">Sem 5</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 6', this)">Sem 6</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 7', this)">Sem 7</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 8', this)">Sem 8</button>
+                </div>
             </div>
 
-            <!-- Stream -->
+            <!-- Stream (Visual Radio Pills) -->
             <div class="form-group">
-                <label for="stream">Stream</label>
-                <select id="stream" name="stream" onchange="toggleOtherStream(this)" required>
-                    <option value="" disabled selected>Select your stream</option>
-                    <option value="CSE">CSE</option>
-                    <option value="ISE">ISE</option>
-                    <option value="Cybersecurity">Cybersecurity</option>
-                    <option value="AIML">AIML</option>
-                    <option value="Data Science">Data Science</option>
-                    <option value="Mech">Mech</option>
-                    <option value="ECE">ECE</option>
-                    <option value="Other">Other</option>
-                </select>
+                <label>Stream</label>
+                <input type="hidden" id="stream" name="stream" required>
+                <div class="pill-grid stream-grid" id="streamGroup">
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'CSE', this)">CSE</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'ISE', this)">ISE</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'Cybersecurity', this)">Cybersecurity</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'AIML', this)">AIML</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'Data Science', this)">Data Science</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'Mech', this)">Mech</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'ECE', this)">ECE</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('stream', 'Other', this)">Other</button>
+                </div>
             </div>
 
             <!-- Other Stream (Conditional Field) -->
@@ -388,17 +516,17 @@
                 <input type="text" id="otherStream" name="otherStream" placeholder="Type your stream">
             </div>
 
-            <!-- Section -->
+            <!-- Section (Visual Radio Pills) -->
             <div class="form-group">
-                <label for="section">Section <span>(Select 1 if your stream has no sections)</span></label>
-                <select id="section" name="section" required>
-                    <option value="" disabled selected>Select section</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
+                <label>Section <span>(Select 1 if your stream has no sections)</span></label>
+                <input type="hidden" id="section" name="section" required>
+                <div class="pill-grid section-grid" id="sectionGroup">
+                    <button type="button" class="pill-btn" onclick="selectPill('section', '1', this)">1</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('section', '2', this)">2</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('section', '3', this)">3</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('section', '4', this)">4</button>
+                    <button type="button" class="pill-btn" onclick="selectPill('section', '5', this)">5</button>
+                </div>
             </div>
 
             <!-- Room Number -->
@@ -410,6 +538,40 @@
             <!-- Submit Button -->
             <button type="submit" class="submit-btn">Submit & Continue</button>
         </form>
+    </div>
+
+    <!-- Review Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="confirm-modal-card">
+            <h3 class="confirm-modal-title">Confirm Attendance Details</h3>
+            <p class="confirm-modal-sub">Please review your selected class details to ensure attendance is correctly recorded.</p>
+            
+            <div class="confirm-item">
+                <span class="confirm-label">Student Name:</span>
+                <span class="confirm-value" id="cfName">-</span>
+            </div>
+            <div class="confirm-item">
+                <span class="confirm-label">USN:</span>
+                <span class="confirm-value" id="cfUsn">-</span>
+            </div>
+            <div class="confirm-item">
+                <span class="confirm-label">Semester:</span>
+                <span class="confirm-value" id="cfSem" style="color:var(--primary);">-</span>
+            </div>
+            <div class="confirm-item">
+                <span class="confirm-label">Stream:</span>
+                <span class="confirm-value" id="cfStream" style="color:var(--primary);">-</span>
+            </div>
+            <div class="confirm-item">
+                <span class="confirm-label">Section:</span>
+                <span class="confirm-value" id="cfSec" style="color:var(--primary);">-</span>
+            </div>
+
+            <div class="confirm-actions">
+                <button type="button" class="btn-cancel" onclick="closeConfirmModal()">Edit Form</button>
+                <button type="button" class="btn-confirm" onclick="executeFinalSubmit()">Confirm & Submit</button>
+            </div>
+        </div>
     </div>
 
     <!-- Popup Modal Card -->
@@ -429,20 +591,161 @@
 
         const COLLEGE_NAME = "A P S College Of Engineering";
         const REDIRECT_URL = "https://www.edubridgeindia.com/college-excellence-program?academy=CAT8&utm_source=CAT8&utm_medium=ECA&utm_campaign=Internal";
+        const STORAGE_KEY = "eb_student_info";
 
-        window.toggleOtherStream = function(selectElement) {
-            const otherGroup = document.getElementById('otherStreamGroup');
-            const otherInput = document.getElementById('otherStream');
+        window.selectPill = function(fieldName, value, btnElement) {
+            document.getElementById(fieldName).value = value;
             
-            if (selectElement.value === 'Other') {
-                otherGroup.classList.remove('hidden');
-                otherInput.setAttribute('required', 'true');
-            } else {
-                otherGroup.classList.add('hidden');
-                otherInput.removeAttribute('required');
-                otherInput.value = '';
+            const group = btnElement.parentElement;
+            const buttons = group.querySelectorAll('.pill-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            if (fieldName === 'stream') {
+                const otherGroup = document.getElementById('otherStreamGroup');
+                const otherInput = document.getElementById('otherStream');
+                if (value === 'Other') {
+                    otherGroup.classList.remove('hidden');
+                    otherInput.setAttribute('required', 'true');
+                } else {
+                    otherGroup.classList.add('hidden');
+                    otherInput.removeAttribute('required');
+                    otherInput.value = '';
+                }
+            }
+        };
+
+        // Load saved information from LocalStorage
+        function loadSavedStudentData() {
+            try {
+                const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                if (savedData.fullName) document.getElementById('fullName').value = savedData.fullName;
+                if (savedData.email) document.getElementById('email').value = savedData.email;
+                if (savedData.mobile) document.getElementById('mobile').value = savedData.mobile;
+                if (savedData.usn) document.getElementById('usn').value = savedData.usn;
+
+                if (savedData.semester) {
+                    const semBtn = Array.from(document.querySelectorAll('#semesterGroup .pill-btn')).find(b => b.textContent.trim() === savedData.semester);
+                    if (semBtn) selectPill('semester', savedData.semester, semBtn);
+                }
+                if (savedData.stream) {
+                    const isKnownStream = ['CSE','ISE','Cybersecurity','AIML','Data Science','Mech','ECE'].includes(savedData.stream);
+                    if (isKnownStream) {
+                        const streamBtn = Array.from(document.querySelectorAll('#streamGroup .pill-btn')).find(b => b.textContent.trim() === savedData.stream);
+                        if (streamBtn) selectPill('stream', savedData.stream, streamBtn);
+                    } else {
+                        const otherBtn = Array.from(document.querySelectorAll('#streamGroup .pill-btn')).find(b => b.textContent.trim() === 'Other');
+                        if (otherBtn) {
+                            selectPill('stream', 'Other', otherBtn);
+                            document.getElementById('otherStream').value = savedData.stream;
+                        }
+                    }
+                }
+                if (savedData.section) {
+                    const secBtn = Array.from(document.querySelectorAll('#sectionGroup .pill-btn')).find(b => b.textContent.trim() === savedData.section);
+                    if (secBtn) selectPill('section', savedData.section, secBtn);
+                }
+            } catch (e) {
+                console.error('LocalStorage error', e);
             }
         }
+
+        // Save submitted details to LocalStorage
+        function saveStudentData(formData) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    fullName: formData.full_name,
+                    email: formData.email,
+                    mobile: formData.mobile,
+                    usn: formData.usn,
+                    semester: formData.semester,
+                    stream: formData.stream,
+                    section: formData.section
+                }));
+            } catch (e) {
+                console.error('LocalStorage save error', e);
+            }
+        }
+
+        window.handleFormSubmit = function(event) {
+            event.preventDefault(); 
+            
+            const semester = document.getElementById('semester').value;
+            const streamSelect = document.getElementById('stream').value;
+            const section = document.getElementById('section').value;
+
+            if (!semester) {
+                alert('Please select your Semester.');
+                return;
+            }
+            if (!streamSelect) {
+                alert('Please select your Stream.');
+                return;
+            }
+            if (!section) {
+                alert('Please select your Section.');
+                return;
+            }
+
+            const finalStream = (streamSelect === 'Other') ? document.getElementById('otherStream').value : streamSelect;
+            if (!finalStream) {
+                alert('Please enter your stream name.');
+                return;
+            }
+
+            // Fill Review Modal
+            document.getElementById('cfName').textContent = document.getElementById('fullName').value;
+            document.getElementById('cfUsn').textContent = document.getElementById('usn').value.toUpperCase();
+            document.getElementById('cfSem').textContent = semester;
+            document.getElementById('cfStream').textContent = finalStream;
+            document.getElementById('cfSec').textContent = section;
+
+            document.getElementById('confirmModal').classList.add('active');
+        };
+
+        window.closeConfirmModal = function() {
+            document.getElementById('confirmModal').classList.remove('active');
+        };
+
+        window.executeFinalSubmit = async function() {
+            closeConfirmModal();
+
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting Attendance...';
+
+            const streamSelect = document.getElementById('stream').value;
+            const finalStream = (streamSelect === 'Other') ? document.getElementById('otherStream').value : streamSelect;
+
+            const formData = {
+                full_name: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                mobile: document.getElementById('mobile').value,
+                college_name: COLLEGE_NAME,
+                usn: document.getElementById('usn').value.trim().toUpperCase(),
+                semester: document.getElementById('semester').value,
+                stream: finalStream,
+                section: document.getElementById('section').value,
+                room_number: document.getElementById('roomNumber').value
+            };
+
+            // Save choices to LocalStorage
+            saveStudentData(formData);
+
+            try {
+                const isRegistered = await submitAttendanceAndCheckRegistration(formData);
+                const targetUrl = isRegistered 
+                    ? "https://www.edubridgeindia.com/login" 
+                    : (REDIRECT_URL || "https://www.edubridgeindia.com/login");
+
+                showRedirectModal(isRegistered, targetUrl);
+            } catch (error) {
+                console.error('Error!', error);
+                alert('Something went wrong. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify & Submit Attendance';
+            }
+        };
 
         function showRedirectModal(isRegistered, redirectUrl) {
             const modal = document.getElementById('redirectModal');
@@ -490,42 +793,7 @@
             okBtn.onclick = navigate;
         }
 
-        window.handleFormSubmit = async function(event) {
-            event.preventDefault(); 
-
-            const submitBtn = document.querySelector('.submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting Attendance...';
-
-            const streamSelect = document.getElementById('stream').value;
-            const finalStream = (streamSelect === 'Other') ? document.getElementById('otherStream').value : streamSelect;
-
-            const formData = {
-                full_name: document.getElementById('fullName').value,
-                email: document.getElementById('email').value,
-                mobile: document.getElementById('mobile').value,
-                college_name: COLLEGE_NAME,
-                usn: document.getElementById('usn').value.trim().toUpperCase(),
-                semester: document.getElementById('semester').value,
-                stream: finalStream,
-                section: document.getElementById('section').value,
-                room_number: document.getElementById('roomNumber').value
-            };
-
-            try {
-                const isRegistered = await submitAttendanceAndCheckRegistration(formData);
-                const targetUrl = isRegistered 
-                    ? "https://www.edubridgeindia.com/login" 
-                    : (REDIRECT_URL || "https://www.edubridgeindia.com/login");
-
-                showRedirectModal(isRegistered, targetUrl);
-            } catch (error) {
-                console.error('Error!', error);
-                alert('Something went wrong. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit & Continue';
-            }
-        }
+        window.addEventListener('DOMContentLoaded', loadSavedStudentData);
     </script>
 
 </body>
