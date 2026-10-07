@@ -230,41 +230,122 @@
             box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
         }
 
-        /* Review Summary Box */
-        .summary-card {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            padding: 14px 16px;
-            margin: 24px 0 10px;
-        }
-
-        .summary-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #166534;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+        /* Modal Overlay Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .summary-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .summary-chip {
+        .modal-card {
             background: #ffffff;
-            border: 1px solid #86efac;
-            color: #14532d;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            transform: scale(0.92);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .modal-icon.registered {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .modal-icon.unregistered {
+            background: #ffedd5;
+            color: #ea580c;
+        }
+
+        .modal-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 10px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin: 0 0 24px;
+        }
+
+        .modal-btn {
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 12px 28px;
+            font-size: 15px;
             font-weight: 600;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);
+        }
+
+        .modal-btn.registered {
+            background-color: #16a34a;
+            box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.25);
+        }
+
+        .modal-btn.registered:hover {
+            background-color: #15803d;
+        }
+
+        .modal-btn.unregistered {
+            background-color: #ea580c;
+            box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.25);
+        }
+
+        .modal-btn.unregistered:hover {
+            background-color: #c2410c;
+        }
+
+        .modal-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
         /* Confirmation Review Modal */
@@ -276,6 +357,12 @@
             width: 100%;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             text-align: left;
+            transform: scale(0.92);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .confirm-modal-card {
+            transform: scale(1);
         }
 
         .confirm-modal-title {
@@ -367,30 +454,30 @@
             <!-- Name -->
             <div class="form-group">
                 <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" name="fullName" required placeholder="e.g. Alex Smith" onchange="updateSummary()">
+                <input type="text" id="fullName" name="fullName" required placeholder="e.g. Alex Smith">
             </div>
 
             <!-- Mail ID -->
             <div class="form-group">
                 <label for="email">Mail ID</label>
-                <input type="email" id="email" name="email" required placeholder="e.g. alex@college.edu" onchange="updateSummary()">
+                <input type="email" id="email" name="email" required placeholder="e.g. alex@college.edu">
             </div>
 
             <!-- Mobile Number -->
             <div class="form-group">
                 <label for="mobile">Mobile Number</label>
-                <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" required placeholder="10-digit mobile number" onchange="updateSummary()">
+                <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" required placeholder="10-digit mobile number">
             </div>
 
             <!-- USN Number -->
             <div class="form-group">
                 <label for="usn">USN Number <span>(University Registration Number)</span></label>
-                <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001 or NA" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase(); updateSummary()">
+                <input type="text" id="usn" name="usn" required placeholder="e.g. 1RV21CS001 or NA" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
             </div>
 
             <!-- Semester (Visual Radio Pills) -->
             <div class="form-group">
-                <label>Semester <span id="semSelectedBadge" style="color:var(--primary); font-weight:700;"></span></label>
+                <label>Semester</label>
                 <input type="hidden" id="semester" name="semester" required>
                 <div class="pill-grid" id="semesterGroup">
                     <button type="button" class="pill-btn" onclick="selectPill('semester', 'Sem 1', this)">Sem 1</button>
@@ -406,7 +493,7 @@
 
             <!-- Stream (Visual Radio Pills) -->
             <div class="form-group">
-                <label>Stream <span id="streamSelectedBadge" style="color:var(--primary); font-weight:700;"></span></label>
+                <label>Stream</label>
                 <input type="hidden" id="stream" name="stream" required>
                 <div class="pill-grid stream-grid" id="streamGroup">
                     <button type="button" class="pill-btn" onclick="selectPill('stream', 'CSE', this)">CSE</button>
@@ -423,7 +510,7 @@
             <!-- Other Stream (Conditional Field) -->
             <div class="form-group hidden" id="otherStreamGroup">
                 <label for="otherStream">Custom Stream Name</label>
-                <input type="text" id="otherStream" name="otherStream" placeholder="Type your stream" oninput="updateSummary()">
+                <input type="text" id="otherStream" name="otherStream" placeholder="Type your stream">
             </div>
 
             <!-- Section (Visual Radio Pills) -->
@@ -445,21 +532,8 @@
                 <input type="text" id="roomNumber" name="roomNumber" placeholder="e.g. 101 or Lab 2">
             </div>
 
-            <!-- Live Verification Summary Card -->
-            <div class="summary-card">
-                <div class="summary-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Selection Summary (Check before submit)
-                </div>
-                <div class="summary-details" id="summaryChips">
-                    <span class="summary-chip" id="sumSem">Sem: Not selected</span>
-                    <span class="summary-chip" id="sumStream">Stream: Not selected</span>
-                    <span class="summary-chip" id="sumSec">Sec: Not selected</span>
-                </div>
-            </div>
-
             <!-- Submit Button -->
-            <button type="submit" class="submit-btn">Verify & Submit Attendance</button>
+            <button type="submit" class="submit-btn">Submit & Continue</button>
         </form>
     </div>
 
@@ -536,21 +610,6 @@
                     otherInput.value = '';
                 }
             }
-
-            updateSummary();
-        };
-
-        window.updateSummary = function() {
-            const sem = document.getElementById('semester').value || 'Not selected';
-            let stream = document.getElementById('stream').value || 'Not selected';
-            if (stream === 'Other') {
-                stream = document.getElementById('otherStream').value || 'Other';
-            }
-            const sec = document.getElementById('section').value || 'Not selected';
-
-            document.getElementById('sumSem').textContent = 'Sem: ' + sem;
-            document.getElementById('sumStream').textContent = 'Stream: ' + stream;
-            document.getElementById('sumSec').textContent = 'Sec: ' + sec;
         };
 
         // Load saved information from LocalStorage
@@ -583,7 +642,6 @@
                     const secBtn = Array.from(document.querySelectorAll('#sectionGroup .pill-btn')).find(b => b.textContent.trim() === savedData.section);
                     if (secBtn) selectPill('section', savedData.section, secBtn);
                 }
-                updateSummary();
             } catch (e) {
                 console.error('LocalStorage error', e);
             }
