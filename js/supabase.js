@@ -98,18 +98,48 @@ export const submitAttendanceAndCheckRegistration = async (attendanceData) => {
   return data; // Returns boolean (is_registered)
 };
 
+// Helper for fetching all records beyond Supabase's default 1000 row limit
+async function fetchAllFromTable(tableName, selectClause = '*', orderField = null, ascending = false) {
+  let allRecords = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = supabaseClient.from(tableName).select(selectClause);
+    if (orderField) {
+      query = query.order(orderField, { ascending });
+    }
+    query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+    const { data, error } = await query;
+    if (error) {
+      console.error(`Error fetching ${tableName} page ${page}:`, error);
+      break;
+    }
+    if (data && data.length > 0) {
+      allRecords.push(...data);
+      if (data.length < pageSize) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allRecords;
+}
+
 export const fetchAllAttendance = async () => {
-  const { data: attendanceData, error } = await supabaseClient
-    .from('student_attendance')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) console.error('Error fetching attendance:', error);
+  const attendanceData = await fetchAllFromTable('student_attendance', '*', 'created_at', false);
   if (!attendanceData || attendanceData.length === 0) return [];
 
   try {
-    const [{ data: registeredData }, { data: uniqueData }] = await Promise.all([
-      supabaseClient.from('registered_students').select('mobile, email, enquiry_id'),
-      supabaseClient.from('unique_students').select('usn, mobile, email, enquiry_id')
+    const [registeredData, uniqueData] = await Promise.all([
+      fetchAllFromTable('registered_students', 'mobile, email, enquiry_id'),
+      fetchAllFromTable('unique_students', 'usn, mobile, email, enquiry_id')
     ]);
 
     const regMap = new Map();
@@ -157,15 +187,11 @@ export const fetchAllAttendance = async () => {
 };
 
 export const fetchUniqueStudents = async () => {
-  const { data: uniqueData, error: uniqueError } = await supabaseClient
-    .from('unique_students')
-    .select('*');
-  if (uniqueError) console.error('Error fetching unique students:', uniqueError);
+  const [uniqueData, attendanceData] = await Promise.all([
+    fetchAllFromTable('unique_students', '*'),
+    fetchAllFromTable('student_attendance', 'usn, mobile, email, college_name, stream, semester')
+  ]);
   
-  const { data: attendanceData } = await supabaseClient
-    .from('student_attendance')
-    .select('usn, mobile, email, college_name, stream, semester');
-
   const attendanceMap = new Map();
   if (attendanceData && attendanceData.length > 0) {
     attendanceData.forEach(att => {
@@ -198,12 +224,7 @@ export const fetchUniqueStudents = async () => {
 };
 
 export const fetchRegisteredStudents = async () => {
-  const { data, error } = await supabaseClient
-    .from('registered_students')
-    .select('*')
-    .range(0, 4999);
-  if (error) console.error('Error fetching registered students:', error);
-  return data || [];
+  return await fetchAllFromTable('registered_students', '*');
 };
 
 export const uploadRegisteredStudents = async (records, onProgress) => {

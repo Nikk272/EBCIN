@@ -17,6 +17,10 @@ let currentFilters = {
 let parsedUploadRecords = [];
 let isUploading = false;
 
+// Pagination State
+let currentPage = 1;
+let recordsPerPage = 50;
+
 // DOM Elements
 const tabs = {
   attendance: document.getElementById('tab-attendance'),
@@ -39,6 +43,16 @@ const tableHead = document.getElementById('table-head');
 const tableBody = document.getElementById('table-body');
 const loadingState = document.getElementById('loading-state');
 const emptyState = document.getElementById('empty-state');
+
+// Pagination Elements
+const paginationContainer = document.getElementById('pagination-container');
+const recordsPerPageSelect = document.getElementById('records-per-page');
+const pageStartSpan = document.getElementById('page-start');
+const pageEndSpan = document.getElementById('page-end');
+const totalRecordsSpan = document.getElementById('total-records');
+const btnPrevPage = document.getElementById('btn-prev-page');
+const btnNextPage = document.getElementById('btn-next-page');
+const pageNumbersDiv = document.getElementById('page-numbers');
 
 // Modal Elements
 const uploadModal = document.getElementById('upload-modal');
@@ -66,7 +80,11 @@ const btnFinishUpload = document.getElementById('btn-finish-upload');
 // Columns config
 const columnsConfig = {
   attendance: [
-    { key: 'created_at', label: 'Date', format: val => new Date(val).toLocaleString() },
+    { key: 'created_at', label: 'Date', format: val => {
+      if (!val) return '-';
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? String(val) : d.toLocaleString();
+    } },
     { key: 'full_name', label: 'Name' },
     { key: 'email', label: 'Email' },
     { key: 'mobile', label: 'Mobile' },
@@ -142,10 +160,41 @@ function setupEventListeners() {
     closeUploadModal();
     loadData('registered');
   });
+
+  // Pagination Event Listeners
+  if (recordsPerPageSelect) {
+    recordsPerPageSelect.addEventListener('change', (e) => {
+      recordsPerPage = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+      currentPage = 1;
+      renderTable();
+    });
+  }
+
+  if (btnPrevPage) {
+    btnPrevPage.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+  }
+
+  if (btnNextPage) {
+    btnNextPage.addEventListener('click', () => {
+      const total = filteredData.length;
+      const pageSize = recordsPerPage === 'all' ? total : recordsPerPage;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
+    });
+  }
 }
 
 async function switchTab(tabId) {
   currentTab = tabId;
+  currentPage = 1;
   
   // Update UI active state
   Object.keys(tabs).forEach(key => {
@@ -187,6 +236,7 @@ async function loadData(tabId) {
       currentData = await fetchRegisteredStudents();
     }
     filteredData = [...currentData];
+    currentPage = 1;
     updateFilterDropdown();
     renderTable();
   } catch (error) {
@@ -253,6 +303,7 @@ function updateFilterDropdown() {
 
 function applyFilter(query) {
   query = query.toLowerCase().trim();
+  currentPage = 1;
   
   filteredData = currentData.filter(item => {
     let matchesDropdown = true;
@@ -265,8 +316,30 @@ function applyFilter(query) {
     if (currentTab === 'attendance') {
       if (currentFilters.dropdown) matchesDropdown = item.college_name === currentFilters.dropdown;
       if (currentFilters.date) {
-        const itemDate = item.created_at ? item.created_at.split('T')[0] : '';
-        matchesDate = itemDate === currentFilters.date;
+        let itemLocalDate = '';
+        let itemUTCDate = '';
+        let itemRawDate = '';
+        if (item.created_at) {
+          const rawStr = String(item.created_at);
+          itemRawDate = rawStr.split(/[T ]/)[0];
+          const d = new Date(item.created_at);
+          if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            itemLocalDate = `${year}-${month}-${day}`;
+
+            const utcYear = d.getUTCFullYear();
+            const utcMonth = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const utcDay = String(d.getUTCDate()).padStart(2, '0');
+            itemUTCDate = `${utcYear}-${utcMonth}-${utcDay}`;
+          }
+        }
+        matchesDate = (
+          itemLocalDate === currentFilters.date ||
+          itemUTCDate === currentFilters.date ||
+          itemRawDate === currentFilters.date
+        );
       }
       if (currentFilters.semester) matchesSemester = item.semester === currentFilters.semester;
       if (currentFilters.stream) matchesStream = item.stream === currentFilters.stream;
@@ -305,30 +378,107 @@ function renderTable() {
   headerHtml += '</tr>';
   tableHead.innerHTML = headerHtml;
 
-  // Render Rows
-  if (filteredData.length === 0) {
+  const totalRecords = filteredData.length;
+  if (totalRecords === 0) {
     tableBody.innerHTML = '';
     emptyState.classList.remove('hidden');
-  } else {
-    emptyState.classList.add('hidden');
-    let rowsHtml = '';
-    filteredData.forEach(row => {
-      rowsHtml += '<tr class="hover:bg-slate-50 transition-colors">';
-      config.forEach(col => {
-        let val = row[col.key];
-        if (col.htmlFormat) {
-          val = col.htmlFormat(val);
-        } else if (col.format) {
-          val = col.format(val);
-        } else if (val === null || val === undefined) {
-          val = '-';
-        }
-        rowsHtml += `<td class="px-6 py-4 whitespace-nowrap">${val}</td>`;
-      });
-      rowsHtml += '</tr>';
-    });
-    tableBody.innerHTML = rowsHtml;
+    if (paginationContainer) paginationContainer.classList.add('hidden');
+    return;
   }
+  
+  emptyState.classList.add('hidden');
+  if (paginationContainer) paginationContainer.classList.remove('hidden');
+
+  const pageSize = recordsPerPage === 'all' ? totalRecords : recordsPerPage;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = recordsPerPage === 'all' ? totalRecords : Math.min(startIndex + pageSize, totalRecords);
+  const pageData = filteredData.slice(startIndex, endIndex);
+
+  let rowsHtml = '';
+  pageData.forEach(row => {
+    rowsHtml += '<tr class="hover:bg-slate-50 transition-colors">';
+    config.forEach(col => {
+      let val = row[col.key];
+      if (col.htmlFormat) {
+        val = col.htmlFormat(val);
+      } else if (col.format) {
+        val = col.format(val);
+      } else if (val === null || val === undefined) {
+        val = '-';
+      }
+      rowsHtml += `<td class="px-6 py-4 whitespace-nowrap">${val}</td>`;
+    });
+    rowsHtml += '</tr>';
+  });
+  tableBody.innerHTML = rowsHtml;
+
+  // Update Pagination Info
+  if (pageStartSpan) pageStartSpan.textContent = totalRecords === 0 ? 0 : startIndex + 1;
+  if (pageEndSpan) pageEndSpan.textContent = endIndex;
+  if (totalRecordsSpan) totalRecordsSpan.textContent = totalRecords;
+
+  if (btnPrevPage) btnPrevPage.disabled = currentPage <= 1;
+  if (btnNextPage) btnNextPage.disabled = currentPage >= totalPages;
+
+  renderPageNumbers(totalPages);
+}
+
+function renderPageNumbers(totalPages) {
+  if (!pageNumbersDiv) return;
+  pageNumbersDiv.innerHTML = '';
+  if (recordsPerPage === 'all' || totalPages <= 1) return;
+
+  const maxVisibleButtons = 5;
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+
+  if (endPage - startPage < maxVisibleButtons - 1) {
+    startPage = Math.max(1, endPage - maxVisibleButtons + 1);
+  }
+
+  if (startPage > 1) {
+    pageNumbersDiv.appendChild(createPageBtn(1));
+    if (startPage > 2) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'px-1.5 text-xs text-slate-400 font-semibold';
+      ellipsis.textContent = '...';
+      pageNumbersDiv.appendChild(ellipsis);
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbersDiv.appendChild(createPageBtn(i));
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'px-1.5 text-xs text-slate-400 font-semibold';
+      ellipsis.textContent = '...';
+      pageNumbersDiv.appendChild(ellipsis);
+    }
+    pageNumbersDiv.appendChild(createPageBtn(totalPages));
+  }
+}
+
+function createPageBtn(pageNum) {
+  const btn = document.createElement('button');
+  btn.textContent = pageNum;
+  if (pageNum === currentPage) {
+    btn.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-sm';
+  } else {
+    btn.className = 'px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs shadow-sm transition-all';
+    btn.addEventListener('click', () => {
+      currentPage = pageNum;
+      renderTable();
+    });
+  }
+  return btn;
 }
 
 function showLoading(isLoading) {
@@ -337,6 +487,7 @@ function showLoading(isLoading) {
     tableHead.innerHTML = '';
     tableBody.innerHTML = '';
     emptyState.classList.add('hidden');
+    if (paginationContainer) paginationContainer.classList.add('hidden');
   } else {
     loadingState.classList.add('hidden');
   }
