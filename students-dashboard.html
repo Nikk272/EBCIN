@@ -84,6 +84,39 @@
       <div id="empty-state" class="hidden p-8 text-center text-slate-500">
         <p>No records found.</p>
       </div>
+
+      <!-- Pagination Controls -->
+      <div id="pagination-container" class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
+        <!-- Records per page selector & Page Info -->
+        <div class="flex items-center gap-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Show:</span>
+            <select id="records-per-page" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm bg-white font-medium focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer">
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+              <option value="all">All</option>
+            </select>
+            <span class="text-xs text-slate-500">per page</span>
+          </div>
+          <div id="pagination-info" class="text-xs font-medium text-slate-600">
+            Showing <span id="page-start" class="font-bold text-slate-800">0</span> to <span id="page-end" class="font-bold text-slate-800">0</span> of <span id="total-records" class="font-bold text-slate-800">0</span> records
+          </div>
+        </div>
+
+        <!-- Page Buttons -->
+        <div class="flex items-center gap-1.5">
+          <button id="btn-prev-page" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-slate-700 shadow-sm transition-all flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Prev
+          </button>
+          <div id="page-numbers" class="flex items-center gap-1"></div>
+          <button id="btn-next-page" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-slate-700 shadow-sm transition-all flex items-center gap-1">
+            Next
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
   </main>
